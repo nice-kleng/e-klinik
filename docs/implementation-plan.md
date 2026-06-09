@@ -1235,42 +1235,49 @@ Simpan mapping terminologi di tabel internal
 - 26 route API (Sanctum) + 40 route JSON internal (session auth) + 90+ route Blade
 - Data seeder: user, poli, dokter, obat, lab, ICD-10
 
-### Phase 2: Modul Pasien & Antrean (Minggu 3-4)
+### Phase 2: Pasien, Antrean & Pendaftaran BPJS (Minggu 3-4)
 
 | Aktivitas                                    | Detail                                                                                      |
 | -------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| CRUD Pasien                                   | Service & Controller untuk registrasi pasien baru, update, delete, search, list. Generate nomor RM otomatis |
+| CRUD Pasien                                   | Service & Controller untuk registrasi pasien baru, update, delete, search, list. Generate nomor RM otomatis. Cari pasien existing berdasarkan NIK/no RM |
 | Dashboard Admin                               | Halaman utama setelah login. Menampilkan statistik: jumlah pasien hari ini, status antrean, jadwal dokter, grafik kunjungan, notifikasi stok obat & expired. Data aggregated dari seluruh modul |
 | Manajemen Identitas Pasien                    | Upload foto, data kontak darurat, alergi                                                   |
-| Sistem Antrean                                | Logic generate nomor antrean per poli per hari. CRUD antrean. Status pipeline               |
-| Pencetakan Tiket Antrean                      | Implementasi cetak thermal (ESC/POS). Format tiket: nama, nomor, poli, tanggal              |
-| Display Antrean (TV Monitor)                  | Halaman display real-time menggunakan WebSocket atau SSE (Server-Sent Events). Update status antrean live |
-| Voice Call System (TTS)                       | Integrasi TTS (Google Cloud TTS / eSpeak). Pemanggilan otomatis via button di sistem        |
+| **Skenario 1: Registrasi Mobile JKN (BPJS)** | Ambil antrean dari Antrol BPJS → verifikasi data pasien dari VClaim → find/create pasien lokal → SEP otomatis via VClaim → cetak tiket |
+| **Skenario 2: Registrasi Walk-in Umum**      | Registrasi langsung / cari pasien existing → pilih poli → cetak tiket antrean |
+| **Skenario 3: Registrasi Walk-in BPJS**      | Verifikasi kartu BPJS via VClaim → find/create pasien lokal → SEP otomatis via VClaim → pilih poli → cetak tiket |
+| Sistem Antrean                                | Logic generate nomor antrean per poli per hari. CRUD antrean. Status pipeline (waiting → called → in_progress → completed / cancelled) |
+| Antrean BPJS (Antrol) Sync                    | Sinkronasi data antrean dari Mobile JKN ke sistem lokal. Update status antrean ke BPJS (called, completed, cancel) |
+| SEP Otomatis                                  | `BpjsSepService::createFromQueue()` — buat SEP dari antrean. Insert SEP ke BPJS via VClaim, simpan lokal |
+| Cetak Tiket Antrean                           | Implementasi cetak thermal (ESC/POS). Format tiket: nama, nomor antrean, poli, tanggal, no SEP (jika BPJS) |
+| Display Antrean (TV Monitor)                  | Halaman display real-time menggunakan polling/ajax. Update status antrean live |
+| Voice Call System (TTS)                       | Integrasi TTS (Google Cloud TTS / Browser fallback). Pemanggilan otomatis via button panggil |
 | Pelaporan Antrean                             | Laporan harian, rata-rata waktu tunggu, per poli                                           |
-| Export/Import Pasien                          | Export data pasien ke Excel. Import data pasien dari Excel/CSV                             |
 
 **Deliverables:**
 - Dashboard admin dengan statistik real-time
 - Full CRUD pasien dengan search & filter
+- 3 skenario registrasi: Mobile JKN, Walk-in Umum, Walk-in BPJS
+- Antrol sync + SEP otomatis untuk pasien BPJS
 - Sistem antrean dengan tiket, display TV, voice call
-- Laporan antrean
 
-### Phase 3: Modul RME + ICD-10 (Minggu 5-6)
+### Phase 3: RME + ICD-10 + Lab (Minggu 5-6)
 
 | Aktivitas                                    | Detail                                                                                      |
 | -------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Master ICD-10                                | Import data ICD-10 (full). API pencarian dengan autocomplete. Admin panel untuk update      |
-| Template SOAP                                | Form input RME dengan layout SOAP. Auto-save draft                                         |
+| Master ICD-10                                | Import data ICD-10 (full). Pencarian dengan autocomplete. Admin panel untuk update          |
+| Template SOAP                                | Form input RME dengan layout SOAP (Subjective, Objective, Assessment, Plan). Auto-save draft |
 | Rekam Medis CRUD                             | Create, read, update RME. Validasi kelengkapan sebelum finalisasi                          |
-| Detail Rekam Medis                           | Diagnosa (ICD-10), tindakan (ICD-9), catatan, observasi                                    |
+| Detail Rekam Medis                           | Diagnosa utama & tambahan (ICD-10), tindakan, catatan SOAP, observasi                      |
+| Tanda Vital                                  | Input TTv (tekanan darah, nadi, suhu, RR, berat badan, tinggi badan). Grafik riwayat TTv per kunjungan |
+| Permintaan Lab dari RME                      | Dokter memilih tes lab → simpan LabRequest → status requested                              |
 | Riwayat Berobat Pasien                       | Timeline kronologis kunjungan. Link ke detail RME per tanggal                              |
 | Dokumen Attachment                           | Upload, preview, delete file attachment. Batasan tipe & ukuran file                         |
 | Cetak Rekam Medis (PDF)                      | Generate PDF rekam medis untuk pasien/tujuan administrasi                                  |
-| Observations / Tanda Vital                   | Input TTv (tekanan darah, nadi, suhu, RR, berat badan, tinggi badan). Grafik riwayat TTv   |
 
 **Deliverables:**
-- ICD-10 database & API pencarian
-- Form RME SOAP
+- ICD-10 database & pencarian
+- Form RME SOAP + TTV
+- Permintaan lab dari RME
 - Riwayat berobat & attachment
 - Cetak PDF
 
@@ -1280,11 +1287,11 @@ Simpan mapping terminologi di tabel internal
 | -------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | Master Obat & Kategori                       | CRUD obat dengan kode, nama generik/dagang, golongan, bentuk sediaan, kekuatan, pabrik, kategori |
 | Supplier Management                          | CRUD supplier                                                                               |
-| Manajemen Batch & Expired                    | Input batch obat dengan harga beli, tanggal kadaluwarsa. Tracking stok per batch            |
+| Manajemen Batch & Expired                    | Input batch obat dengan harga beli, tanggal kadaluwarsa. Tracking stok per batch. Harga jual diambil otomatis dari batch |
 | Manajemen Stok (Mutasi)                      | Transaksi stok masuk (pembelian) & keluar (penjualan/disposisi). Update stok real-time      |
 | Low Stock Alert                              | Notifikasi dashboard & email jika stok di bawah minimum                                    |
 | Peringatan Kedaluwarsa                       | Daftar obat yang akan expired dalam 30/60/90 hari. Notifikasi                              |
-| Resep Obat                                   | Input resep dari RME atau manual. Pilih obat, dosis, jadwal. Status resep                  |
+| Resep Obat                                   | Input resep dari RME atau manual. Pilih obat, dosis, jadwal, jumlah. Status resep           |
 | Racikan Obat                                 | Resep racikan dengan komposisi beberapa obat                                               |
 | Stok Opname                                  | Proses opname: buat sesi opname, input stok fisik, hitung selisih, adjust stok             |
 | Laporan Kartu Stok & Mutasi                   | Kartu stok per obat, mutasi per periode, stok opname                                       |
@@ -1297,28 +1304,45 @@ Simpan mapping terminologi di tabel internal
 - Resep obat dengan racikan
 - Laporan stok
 
-### Phase 5: Integrasi BPJS VClaim & Antrol (Minggu 9-10)
+### Phase 5: Kasir & Piutang (Minggu 9-10)
 
 | Aktivitas                                    | Detail                                                                                      |
 | -------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Setup BPJS Client                            | Buat BPJS Client class (Guzzle). Konfigurasi base URL, basic auth, secret key. Handle signature (hash) |
+| Tarif Jasa Dokter                            | Master tarif per dokter per poli. Bisa berbeda antar dokter & poli                          |
+| Tarif Tindakan & Lab                         | Master tarif tindakan medis & tes laboratorium                                              |
+| Tagihan Otomatis                             | Generate billing dari sumber: jasa dokter (dari RME), obat (dari resep × harga batch), tindakan (dari RME), lab (dari LabResult) |
+| Pembayaran                                   | Input pembayaran tunai. Status: lunas / hutang / sebagian. Kembalian                        |
+| Manajemen Piutang                            | Daftar pasien dengan status hutang. History pembayaran cicilan. Jatuh tempo. Notifikasi     |
+| Invoice / Struk                              | Cetak invoice (struk thermal / PDF). Nomor invoice otomatis                                |
+| Laporan Keuangan                             | Laporan harian per kasir, per shift. Pendapatan per poli, per dokter. Rekap piutang        |
+| Dashboard Kasir                              | Halaman utama kasir: antrean pasien yang sudah diperiksa, total tagihan, status pembayaran  |
+
+**Deliverables:**
+- Master tarif dokter, tindakan, lab
+- Tagihan otomatis (obat batch + jasa + tindakan + lab)
+- Pembayaran lunas & hutang
+- Manajemen piutang
+- Invoice & laporan keuangan
+
+### Phase 6: BPJS Klaim & Referensi (Minggu 11-12)
+
+| Aktivitas                                    | Detail                                                                                      |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | Verifikasi Peserta BPJS                      | Implementasi VClaim Peserta.nik / Peserta.noka. Simpan data kepesertaan                    |
-| SEP (Surat Eligibilitas Peserta)             | CRUD SEP: Insert, Update, Delete, Status. Simpan no_sep ke database                        |
-| Antrean BPJS (Antrol)                        | Sinkronasi jadwal dokter. Kirim antrean. Dapatkan nomor antrean BPJS                       |
 | Aplicares                                    | Pencarian faskes rujukan via API Aplicares                                                  |
 | Rujukan BPJS                                 | Insert, Update, Delete, Status rujukan. Cetak surat rujukan                                |
-| Klaim BPJS                                   | Submit klaim rawat jalan & rawat inap. Data INACBG's Group. Attachment klaim               |
+| Klaim BPJS                                   | Submit klaim rawat jalan. Data INACBG's Group. Data diambil dari RME + resep + billing     |
 | Monitoring Klaim                             | Cek status klaim via VClaim API. Update status di database                                 |
 | Laporan BPJS                                 | Laporan pendaftaran, pelayanan, penggantian biaya                                          |
 | Logging & Error Handling                     | Log setiap request/response BPJS. Handle timeout, error code, retry mechanism              |
 
 **Deliverables:**
-- Verifikasi peserta BPJS & SEP
-- Antrean BPJS sinkron
+- Verifikasi peserta BPJS
 - Submit & monitoring klaim
 - Rujukan BPJS
+- Laporan BPJS
 
-### Phase 6: Integrasi Satu Sehat FHIR (Minggu 11-12)
+### Phase 7: Integrasi Satu Sehat FHIR (Minggu 13-14)
 
 | Aktivitas                                    | Detail                                                                                      |
 | -------------------------------------------- | ------------------------------------------------------------------------------------------- |
@@ -1341,42 +1365,26 @@ Simpan mapping terminologi di tabel internal
 - Terminology validation
 - Integration dashboard
 
-### Phase 7: Testing, Debugging, UAT (Minggu 13-14)
+### Phase 8: Testing, UAT & Deployment (Minggu 15-16)
 
 | Aktivitas                                    | Detail                                                                                      |
 | -------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | Unit Testing                                 | PHPUnit test untuk service layer, model relationship, helper functions                      |
-| Feature Testing                              | Test API endpoints full flow. Test setiap skenario: sukses, validasi error, not found, unauthorized |
+| Feature Testing                              | Test end-to-end setiap skenario: Mobile JKN → RME → Lab → Farmasi → Kasir → Klaim. Test role-based access |
 | Integration Testing                          | Test integrasi BPJS (mock response). Test integrasi Satu Sehat (sandbox)                   |
 | Performance Testing                          | Load test dengan Apache Bench / k6. Identifikasi bottleneck query. Optimasi index & query   |
-| Security Testing                             | SQL injection, XSS, CSRF, auth bypass. Test role-based access                              |
-| User Acceptance Testing (UAT)                | Demo ke user (staf klinik, dokter, apoteker). Kumpulkan feedback. Iterasi perbaikan        |
-| Bug Fixing                                   | Prioritaskan critical & high bugs. Regression test setelah fix                             |
-
-**Deliverables:**
-- Laporan hasil testing
-- Bug tracker terkelola
-- Fix untuk semua critical & high bugs
-- Sign-off UAT
-
-### Phase 8: Deployment & Dokumentasi (Minggu 15-16)
-
-| Aktivitas                                    | Detail                                                                                      |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Persiapan Server                             | Setup production server (Nginx/Apache, PHP 8.3+, MySQL, Redis). Konfigurasi firewall, SSL  |
+| User Acceptance Testing (UAT)                | Demo ke user per role (pendaftaran, dokter, laboran, apoteker, kasir, admin). Kumpulkan feedback. Iterasi perbaikan |
+| Persiapan Server                             | Setup production server (Nginx/Apache, PHP 8.3+, MySQL). Konfigurasi firewall, SSL          |
 | Deployment                                   | Deploy menggunakan git + deploy script. Setup environment production. Migrate database      |
 | Backup Strategy                              | Setup backup database harian. Backup file storage (attachment, foto). Retention policy     |
-| Monitoring Setup                             | Setup Laravel Horizon (queue), Laravel Telescope (debug), error tracking (Sentry opsional)  |
-| Dokumentasi API                              | Dokumentasi API menggunakan Scribe / Swagger. Endpoint, parameter, contoh request/response  |
-| Dokumentasi Pengguna                         | Buku panduan penggunaan untuk admin, dokter, apoteker, staf pendaftaran, kasir              |
-| Dokumentasi Teknis                           | Dokumentasi arsitektur, konfigurasi environment, deployment guide, maintenance guide        |
-| Pelatihan User                               | Sesi pelatihan untuk setiap role. Video tutorial (opsional)                                 |
+| Dokumentasi Pengguna                         | Buku panduan penggunaan untuk setiap role: pendaftaran, dokter, laboran, apoteker, kasir, admin |
+| Dokumentasi Teknis                           | Deployment guide, environment config, maintenance guide                                    |
+| Pelatihan User                               | Sesi pelatihan untuk setiap role. Skenario end-to-end                                      |
 | Go Live                                      | Cutover dari sistem lama (jika ada). Monitoring ketat 1 minggu pertama                      |
-| Maintenance Plan                             | Jadwal maintenance rutin. Prosedur handling incident. Kontak support                        |
 
 **Deliverables:**
 - Production server siap
-- Dokumentasi API, user, teknis
+- Dokumentasi pengguna & teknis
 - Pelatihan user
 - Go live
 
