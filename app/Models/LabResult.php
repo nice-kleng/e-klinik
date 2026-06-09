@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\HasCreatedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LabResult extends Model
 {
+    use HasCreatedBy;
     protected $fillable = [
         'lab_request_item_id', 'lab_test_id', 'patient_id',
         'result_value', 'result_text',

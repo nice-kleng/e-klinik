@@ -2,12 +2,17 @@
 
 namespace App\Models;
 
+use App\Traits\Filterable;
+use App\Traits\HasCreatedBy;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Queue extends Model
 {
+    use HasCreatedBy, Filterable, HasFactory;
     protected $fillable = [
         'patient_id',
         'polyclinic_id',
@@ -58,5 +63,15 @@ class Queue extends Model
     public function medicalRecord(): HasOne
     {
         return $this->hasOne(MedicalRecord::class, 'queue_id');
+    }
+
+    public function bpjsSep(): HasOne
+    {
+        return $this->hasOne(BpjsSep::class, 'queue_id');
+    }
+
+    public function bpjsAntrean(): HasMany
+    {
+        return $this->hasMany(BpjsAntrean::class, 'queue_id');
     }
 }

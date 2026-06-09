@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\HasCreatedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Prescription extends Model
 {
+    use HasCreatedBy;
     protected $fillable = [
         'medical_record_id',
         'patient_id',

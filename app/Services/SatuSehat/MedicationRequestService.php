@@ -120,6 +120,20 @@ class MedicationRequestService
         return $lastResponse;
     }
 
+    public function syncMedicationRequest(Prescription $prescription): ?array
+    {
+        $existingRefs = SatusehatResource::where('model_type', get_class($prescription))
+            ->where('model_id', $prescription->id)
+            ->where('resource_type', 'MedicationRequest')
+            ->where('status', 'synced')
+            ->exists();
+
+        if ($existingRefs) {
+            return null;
+        }
+        return $this->createMedicationRequest($prescription);
+    }
+
     public function getMedicationRequest(string $ssId): ?array
     {
         return $this->client->getResourceById('MedicationRequest', $ssId);

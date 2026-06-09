@@ -39,7 +39,7 @@ class DashboardController extends Controller
             $totalPatientsToday = 0;
             $queueStats = [
                 'total' => 0, 'waiting' => 0, 'called' => 0,
-                'in_progress' => 0, 'completed' => 0, 'canceled' => 0,
+                'in_progress' => 0, 'completed' => 0, 'cancelled' => 0,
                 'by_polyclinic' => [],
             ];
             $queueByPolyclinic = collect();

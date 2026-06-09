@@ -2,15 +2,18 @@
 
 namespace App\Models;
 
+use App\Traits\Filterable;
+use App\Traits\HasCreatedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class MedicalRecord extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasCreatedBy, HasFactory, SoftDeletes, Filterable;
 
     protected $fillable = [
         'patient_id',
@@ -71,5 +74,20 @@ class MedicalRecord extends Model
     public function prescriptions(): HasMany
     {
         return $this->hasMany(Prescription::class, 'medical_record_id');
+    }
+
+    public function details(): HasMany
+    {
+        return $this->hasMany(MedicalRecordDetail::class);
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(Attachment::class);
+    }
+
+    public function labRequests(): HasMany
+    {
+        return $this->hasMany(LabRequest::class);
     }
 }

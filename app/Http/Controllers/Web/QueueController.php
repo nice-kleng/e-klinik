@@ -69,7 +69,7 @@ class QueueController extends Controller
         try {
             $patient = Patient::findOrFail($validated['patient_id']);
             $polyclinic = Polyclinic::findOrFail($validated['polyclinic_id']);
-            $doctor = $validated['doctor_id'] ? Doctor::find($validated['doctor_id']) : null;
+            $doctor = ($validated['doctor_id'] ?? null) ? Doctor::find($validated['doctor_id']) : null;
 
             $this->queueService->registerQueue(
                 $patient,

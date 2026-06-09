@@ -19,7 +19,7 @@ class QueueResource extends JsonResource
                 'called' => 'Dipanggil',
                 'in_progress' => 'Dalam Pemeriksaan',
                 'completed' => 'Selesai',
-                'canceled' => 'Dibatalkan',
+                'cancelled' => 'Dibatalkan',
                 default => $this->status,
             },
             'service_type' => $this->service_type,

@@ -141,6 +141,20 @@ class ConditionService
         return $lastResponse;
     }
 
+    public function syncCondition(MedicalRecord $mr): ?array
+    {
+        $existingRefs = SatusehatResource::where('model_type', get_class($mr))
+            ->where('model_id', $mr->id)
+            ->where('resource_type', 'Condition')
+            ->where('status', 'synced')
+            ->exists();
+
+        if ($existingRefs) {
+            return $this->updateCondition($mr);
+        }
+        return $this->createCondition($mr);
+    }
+
     public function getCondition(string $ssId): ?array
     {
         return $this->client->getResourceById('Condition', $ssId);

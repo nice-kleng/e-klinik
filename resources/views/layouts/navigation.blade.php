@@ -110,7 +110,7 @@
             </a>
         </li>
         <li>
-            <a href="{{ route('reports.expired') }}" class="nav-link text-white {{ request()->routeIs('reports.*') ? 'active' : '' }}">
+            <a href="{{ route('inventories.expired') }}" class="nav-link text-white {{ request()->routeIs('inventories.*') ? 'active' : '' }}">
                 Laporan
             </a>
         </li>
@@ -118,6 +118,6 @@
     <hr>
     <div class="text-white small px-2">
         {{ Auth::user()->name }}<br>
-        <span class="text-secondary">{{ Auth::user()->role ?? 'User' }}</span>
+        <span class="text-secondary">{{ Auth::user()->getRoleNames()->first() ?? 'User' }}</span>
     </div>
 </div>

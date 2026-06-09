@@ -2,18 +2,21 @@
 
 namespace App\Models;
 
+use App\Traits\Filterable;
+use App\Traits\HasCreatedBy;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Patient extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasCreatedBy, HasFactory, SoftDeletes, Filterable;
 
     protected $fillable = [
         'user_id',
@@ -83,6 +86,26 @@ class Patient extends Model
     public function bpjsReferrals(): HasMany
     {
         return $this->hasMany(BpjsReferral::class, 'patient_id');
+    }
+
+    public function bpjsAntrean(): HasMany
+    {
+        return $this->hasMany(BpjsAntrean::class, 'patient_id');
+    }
+
+    public function bpjsSep(): HasMany
+    {
+        return $this->hasMany(BpjsSep::class, 'patient_id');
+    }
+
+    public function labRequests(): HasMany
+    {
+        return $this->hasMany(LabRequest::class);
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(Attachment::class);
     }
 
     public function age(): Attribute

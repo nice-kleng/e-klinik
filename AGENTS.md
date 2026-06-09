@@ -11,7 +11,7 @@
 | Command | What |
 |---------|------|
 | `composer dev` | Runs server + queue listener + logs + Vite concurrently |
-| `php artisan migrate` | Runs 29 migrations (all tables) |
+| `php artisan migrate` | Runs 36 migrations (all tables) |
 | `php artisan satusehat:sync {type?} {--force}` | Sync unsynced data to Satu Sehat (patients/encounters/conditions/all) |
 | `php artisan db:seed --class=LabDataSeeder` | Seeds lab categories + 20 lab tests + laborant user |
 | `php artisan db:seed --class=Icd10Seeder` | Seeds ~1200 ICD-10 codes |
@@ -42,11 +42,13 @@
 - All BPJS & Satu Sehat services bound as singletons
 - Config from `config/bpjs.php` and `config/satusehat.php`
 
-### Models — `app/Models/` (25 models)
-- Patient: SoftDeletes, `age` accessor, `bpjsPatient` HasOne
-- MedicalRecord: SoftDeletes, casts `vital_signs`/`diagnosis_secondary` as array
+### Models — `app/Models/` (33 models)
+- Patient: SoftDeletes, `age` accessor, `bpjsPatient` HasOne, traits: `HasCreatedBy`, `Filterable`
+- MedicalRecord: SoftDeletes, casts `vital_signs`/`diagnosis_secondary` as array, traits: `HasCreatedBy`, `Filterable`
 - SatusehatResource: polymorphic morphTo `model()`
-- BPJS models: BpjsPatient, BpjsClaim, BpjsReferral, BpjsAntrean
+- BPJS models: BpjsPatient, BpjsClaim, BpjsReferral, BpjsAntrean, BpjsSep, BpjsJadwal
+- New: DoctorSchedule, MedicalRecordDetail, Attachment, IntegrationLog, Configuration, Notification
+- All models with `created_by` column use `HasCreatedBy` trait
 
 ### Lab Module
 - **5 migrations**: `lab_test_categories`, `lab_tests`, `lab_requests`, `lab_request_items`, `lab_results`
@@ -56,6 +58,12 @@
 - **23 routes**: protected by `role:admin,laborant` (master data), `role:admin,doctor,laborant` (requests), `role:admin,laborant,doctor` (results)
 - Lab results map to Satu Sehat Observation resource (LOINC)
 - Role `laborant` added to users ENUM
+
+### Observers (auto-sync to Satu Sehat)
+- `app/Observers/PatientObserver` — calls `PatientService::syncPatient()` on create/update
+- `app/Observers/MedicalRecordObserver` — calls `EncounterService::syncEncounter()`, `ConditionService::syncCondition()`, `ObservationService::syncObservation()` on create/update
+- `app/Observers/PrescriptionObserver` — calls `MedicationRequestService::syncMedicationRequest()` on create
+- Registered in `AppServiceProvider@boot`
 
 ### Key ENV (must set before integrations work)
 ```
@@ -74,6 +82,14 @@ SATUSEHAT_CLIENT_ID= / SATUSEHAT_CLIENT_SECRET= / SATUSEHAT_ORGANIZATION_ID=
 - Queue lifecycle: waiting → called → in_progress → completed (or cancelled)
 - Soft deletes: users, patients, medical_records, medicines
 - ICD-10 seeder is a **migration** (not seeder class) at `database/migrations/000021_*`
+
+## Architecture Notes (after refactor)
+- **Duplikasi dihapus**: `app/Clients/` (BpjsClient, SatusehatClient) dihapus — pakai `app/Services/BPJS/BPJSHttpClient` dan `app/Services/SatuSehat/SatuSehatClient` yang sudah ada
+- **Duplikasi dihapus**: `app/Helpers/{BpjsConverter,SatusehatConverter}` dihapus — FHIR mapping via service, BPJS mapping via service
+- **DTO dihapus**: `app/DTOs/` tidak terpakai — service langsung pakai array/Model
+- **Method baru**: `syncEncounter`, `syncCondition`, `syncObservation`, `syncMedicationRequest` ditambahkan ke service Satu Sehat masing-masing
+- **Traits**: `HasCreatedBy` digunakan oleh 12 model, `Filterable` oleh Patient/Queue/MedicalRecord/Medicine
+- **`ApiResponse` trait** — tersedia di `app/Traits/` tapi belum di-`use` di controller (akan dipasang di fase 2)
 
 ## Known gaps
 - **No tests** — phpunit.xml exists (SQLite in-memory) but `tests/` is empty

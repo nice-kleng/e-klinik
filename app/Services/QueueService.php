@@ -23,7 +23,7 @@ class QueueService
     protected const STATUS_CALLED = 'called';
     protected const STATUS_IN_PROGRESS = 'in_progress';
     protected const STATUS_COMPLETED = 'completed';
-    protected const STATUS_CANCELED = 'canceled';
+    protected const STATUS_CANCELLED = 'cancelled';
 
     protected const AVERAGE_CONSULTATION_MINUTES = 15;
 
@@ -40,7 +40,7 @@ class QueueService
         $formattedDate = Carbon::parse($date)->format('Ymd');
 
         $lastQueue = Queue::where('polyclinic_id', $polyclinic->id)
-            ->where('queue_date', $date)
+            ->whereDate('queue_date', $date)
             ->orderBy('id', 'desc')
             ->first();
 
@@ -105,7 +105,7 @@ class QueueService
         $polyclinic = Polyclinic::where('code', $polyclinicCode)->firstOrFail();
 
         $queue = Queue::where('polyclinic_id', $polyclinic->id)
-            ->where('queue_date', now()->toDateString())
+            ->whereDate('queue_date', now()->toDateString())
             ->where('status', self::STATUS_WAITING)
             ->orderBy('id', 'asc')
             ->first();
@@ -155,14 +155,14 @@ class QueueService
 
     public function cancel(Queue $queue): Queue
     {
-        if (in_array($queue->status, [self::STATUS_COMPLETED, self::STATUS_CANCELED])) {
+        if (in_array($queue->status, [self::STATUS_COMPLETED, self::STATUS_CANCELLED])) {
             throw new \RuntimeException(
-                'Queue already completed or canceled.'
+                'Queue already completed or cancelled.'
             );
         }
 
         $queue->update([
-            'status' => self::STATUS_CANCELED,
+            'status' => self::STATUS_CANCELLED,
         ]);
 
         try {
@@ -181,14 +181,14 @@ class QueueService
     {
         return Queue::with(['patient', 'doctor', 'medicalRecord'])
             ->where('polyclinic_id', $polyclinic->id)
-            ->where('queue_date', $date)
+            ->whereDate('queue_date', $date)
             ->orderBy('id', 'asc')
             ->get();
     }
 
     public function getQueueStats(string $date): array
     {
-        $queues = Queue::where('queue_date', $date)->get();
+        $queues = Queue::whereDate('queue_date', $date)->get();
 
         return [
             'total' => $queues->count(),
@@ -196,7 +196,7 @@ class QueueService
             'called' => $queues->where('status', self::STATUS_CALLED)->count(),
             'in_progress' => $queues->where('status', self::STATUS_IN_PROGRESS)->count(),
             'completed' => $queues->where('status', self::STATUS_COMPLETED)->count(),
-            'canceled' => $queues->where('status', self::STATUS_CANCELED)->count(),
+            'cancelled' => $queues->where('status', self::STATUS_CANCELLED)->count(),
             'by_polyclinic' => $queues->groupBy('polyclinic_id')
                 ->map(fn ($group) => [
                     'polyclinic_id' => $group->first()->polyclinic_id,
@@ -214,12 +214,12 @@ class QueueService
         $todayDate = now()->toDateString();
 
         $waitingCount = Queue::where('polyclinic_id', $polyclinic->id)
-            ->where('queue_date', $todayDate)
+            ->whereDate('queue_date', $todayDate)
             ->whereIn('status', [self::STATUS_WAITING, self::STATUS_CALLED])
             ->count();
 
         $recentCompleted = Queue::where('polyclinic_id', $polyclinic->id)
-            ->where('queue_date', $todayDate)
+            ->whereDate('queue_date', $todayDate)
             ->where('status', self::STATUS_COMPLETED)
             ->whereNotNull('completed_at')
             ->whereNotNull('called_at')

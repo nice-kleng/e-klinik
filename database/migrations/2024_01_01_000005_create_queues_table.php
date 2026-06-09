@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('patient_id')->constrained()->cascadeOnDelete();
             $table->foreignId('polyclinic_id')->constrained()->cascadeOnDelete();
             $table->foreignId('doctor_id')->nullable()->constrained()->nullOnDelete();
-            $table->integer('queue_number');
+            $table->string('queue_number');
             $table->date('queue_date');
             $table->enum('status', ['waiting', 'called', 'in_progress', 'completed', 'cancelled'])->default('waiting');
             $table->integer('estimated_wait_time')->nullable();

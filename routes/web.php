@@ -28,13 +28,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Patients — admin, doctor, cashier
     Route::resource('patients', PatientController::class)
         ->except(['destroy'])
-        ->middleware('role:admin,doctor,cashier');
+        ->middleware('role:admin|doctor|cashier');
     Route::delete('patients/{patient}', [PatientController::class, 'destroy'])
         ->name('patients.destroy')
         ->middleware('role:admin');
 
     // Queues — admin, doctor, cashier
-    Route::prefix('queues')->name('queues.')->middleware('role:admin,doctor,cashier')->group(function () {
+    Route::prefix('queues')->name('queues.')->middleware('role:admin|doctor|cashier')->group(function () {
         Route::get('/', [QueueController::class, 'index'])->name('index');
         Route::get('/create', [QueueController::class, 'create'])->name('create');
         Route::post('/', [QueueController::class, 'store'])->name('store');
@@ -49,7 +49,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Medical Records — admin, doctor
     Route::resource('medical-records', MedicalRecordController::class)
         ->except(['destroy'])
-        ->middleware('role:admin,doctor');
+        ->middleware('role:admin|doctor');
     Route::delete('medical-records/{medical_record}', [MedicalRecordController::class, 'destroy'])
         ->name('medical-records.destroy')
         ->middleware('role:admin');
@@ -57,23 +57,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Diagnoses (ICD-10) — admin, doctor
     Route::get('diagnoses', [DiagnosisController::class, 'index'])
         ->name('diagnoses.index')
-        ->middleware('role:admin,doctor');
+        ->middleware('role:admin|doctor');
 
     // Medicines — admin, pharmacist
     Route::resource('medicines', MedicineController::class)
         ->except(['destroy'])
-        ->middleware('role:admin,pharmacist');
+        ->middleware('role:admin|pharmacist');
 
     // Prescriptions — admin, doctor, pharmacist
     Route::resource('prescriptions', PrescriptionController::class)
         ->only(['index', 'create', 'store', 'show'])
-        ->middleware('role:admin,doctor,pharmacist');
+        ->middleware('role:admin|doctor|pharmacist');
     Route::get('prescriptions/{prescription}/print', [PrescriptionController::class, 'print'])
         ->name('prescriptions.print')
-        ->middleware('role:admin,pharmacist');
+        ->middleware('role:admin|pharmacist');
 
     // Inventory — admin, pharmacist
-    Route::prefix('inventories')->name('inventories.')->middleware('role:admin,pharmacist')->group(function () {
+    Route::prefix('inventories')->name('inventories.')->middleware('role:admin|pharmacist')->group(function () {
         Route::get('/', [InventoryController::class, 'index'])->name('index');
         Route::get('/create', [InventoryController::class, 'create'])->name('create');
         Route::post('/', [InventoryController::class, 'store'])->name('store');
@@ -105,14 +105,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Lab Test Categories — admin, laborant
     Route::resource('lab-test-categories', LabTestCategoryController::class)
         ->except(['show'])
-        ->middleware('role:admin,laborant');
+        ->middleware('role:admin|laborant');
 
     // Lab Tests — admin, laborant
     Route::resource('lab-tests', LabTestController::class)
-        ->middleware('role:admin,laborant');
+        ->middleware('role:admin|laborant');
 
     // Lab Requests — admin, doctor, laborant
-    Route::prefix('lab-requests')->name('lab-requests.')->middleware('role:admin,doctor,laborant')->group(function () {
+    Route::prefix('lab-requests')->name('lab-requests.')->middleware('role:admin|doctor|laborant')->group(function () {
         Route::get('/', [LabRequestController::class, 'index'])->name('index');
         Route::get('/create', [LabRequestController::class, 'create'])->name('create');
         Route::post('/', [LabRequestController::class, 'store'])->name('store');
@@ -121,7 +121,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     // Lab Results — admin, laborant, doctor
-    Route::prefix('lab-results')->name('lab-results.')->middleware('role:admin,laborant,doctor')->group(function () {
+    Route::prefix('lab-results')->name('lab-results.')->middleware('role:admin|laborant|doctor')->group(function () {
         Route::get('/', [LabResultController::class, 'index'])->name('index');
         Route::get('/input/{labRequest}', [LabResultController::class, 'input'])->name('input');
         Route::post('/', [LabResultController::class, 'store'])->name('store');
@@ -131,7 +131,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // ─── BPJS JSON Endpoints (internal, via session auth) ──────
     Route::prefix('bpjs')->name('bpjs.')->group(function () {
-        Route::prefix('vclaim')->name('vclaim.')->middleware('role:admin,doctor,cashier')->group(function () {
+        Route::prefix('vclaim')->name('vclaim.')->middleware('role:admin|doctor|cashier')->group(function () {
             Route::get('peserta', [\App\Http\Controllers\Web\BPJS\VClaimController::class, 'peserta'])->name('peserta');
             Route::post('sep', [\App\Http\Controllers\Web\BPJS\VClaimController::class, 'sepStore'])->name('sep.store');
             Route::get('sep/{noSep}', [\App\Http\Controllers\Web\BPJS\VClaimController::class, 'sepShow'])->name('sep.show');
@@ -144,7 +144,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('referensi/faskes', [\App\Http\Controllers\Web\BPJS\VClaimController::class, 'referensiFaskes'])->name('referensi.faskes');
         });
 
-        Route::prefix('antrol')->name('antrol.')->middleware('role:admin,cashier')->group(function () {
+        Route::prefix('antrol')->name('antrol.')->middleware('role:admin|cashier')->group(function () {
             Route::post('antrean', [\App\Http\Controllers\Web\BPJS\AntrolController::class, 'addAntrean'])->name('antrean.store');
             Route::put('antrean', [\App\Http\Controllers\Web\BPJS\AntrolController::class, 'updateAntrean'])->name('antrean.update');
             Route::delete('antrean', [\App\Http\Controllers\Web\BPJS\AntrolController::class, 'deleteAntrean'])->name('antrean.destroy');
@@ -155,7 +155,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     // ─── Satu Sehat JSON Endpoints (internal, via session auth) ──
-    Route::prefix('satusehat')->name('satusehat.')->middleware('role:admin,doctor')->group(function () {
+    Route::prefix('satusehat')->name('satusehat.')->middleware('role:admin|doctor')->group(function () {
         Route::post('sync/patient/{patient}', [\App\Http\Controllers\Web\SatuSehat\FHIRController::class, 'syncPatient'])->name('sync.patient');
         Route::post('sync/encounter/{medical_record}', [\App\Http\Controllers\Web\SatuSehat\FHIRController::class, 'syncEncounter'])->name('sync.encounter');
         Route::post('sync/condition/{medical_record}', [\App\Http\Controllers\Web\SatuSehat\FHIRController::class, 'syncCondition'])->name('sync.condition');

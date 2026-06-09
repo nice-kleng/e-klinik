@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\HasCreatedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class LabRequestItem extends Model
 {
+    use HasCreatedBy;
     protected $fillable = [
         'lab_request_id', 'lab_test_id', 'status', 'created_by',
     ];

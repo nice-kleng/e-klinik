@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -12,9 +11,16 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
         $this->call([
+            RoleSeeder::class,
             MasterDataSeeder::class,
+            MedicineSeeder::class,
+            SupplierSeeder::class,
+            PatientSeeder::class,
             LabDataSeeder::class,
+            Icd10Seeder::class,
         ]);
     }
 }

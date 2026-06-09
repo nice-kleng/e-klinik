@@ -6,7 +6,7 @@
         <h4 class="mb-0">Detail Permintaan Lab #{{ $labRequest->id }}</h4>
         <div class="d-flex gap-2">
             @if($labRequest->status !== 'completed' && $labRequest->status !== 'cancelled')
-                @can('updateStatus', $labRequest)
+                @hasanyrole('admin|laborant')
                 <form method="POST" action="{{ route('lab-requests.update-status', $labRequest) }}" class="d-inline">
                     @csrf
                     @method('PATCH')

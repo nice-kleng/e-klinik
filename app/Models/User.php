@@ -12,14 +12,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password', 'role', 'phone', 'is_active'])]
+#[Fillable(['name', 'email', 'password', 'phone', 'is_active'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     use HasApiTokens;
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, SoftDeletes;
+    use HasFactory, HasRoles, Notifiable, SoftDeletes;
 
     protected function casts(): array
     {
@@ -43,5 +44,20 @@ class User extends Authenticatable
     public function doctor(): HasOne
     {
         return $this->hasOne(Doctor::class, 'user_id');
+    }
+
+    public function createdPatients(): HasMany
+    {
+        return $this->hasMany(Patient::class, 'created_by');
+    }
+
+    public function createdPrescriptions(): HasMany
+    {
+        return $this->hasMany(Prescription::class, 'created_by');
+    }
+
+    public function integrationLogs(): HasMany
+    {
+        return $this->hasMany(IntegrationLog::class, 'created_by');
     }
 }

@@ -50,4 +50,14 @@ class Doctor extends Model
     {
         return $this->hasMany(Prescription::class, 'doctor_id');
     }
+
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(DoctorSchedule::class);
+    }
+
+    public function labRequests(): HasMany
+    {
+        return $this->hasMany(LabRequest::class, 'doctor_id');
+    }
 }

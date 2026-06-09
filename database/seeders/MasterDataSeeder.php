@@ -9,51 +9,81 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
+use Spatie\Permission\Models\Role;
+
 class MasterDataSeeder extends Seeder
 {
     public function run(): void
     {
-        $admin = User::create([
-            'name' => 'Administrator',
-            'email' => 'admin@e-klinik.com',
-            'password' => Hash::make('admin123'),
-            'role' => 'admin',
-            'phone' => '081234567890',
-            'is_active' => true,
-            'email_verified_at' => now(),
-        ]);
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@e-klinik.com'],
+            [
+                'name' => 'Administrator',
+                'password' => Hash::make('admin123'),
+                'phone' => '081234567890',
+                'is_active' => true,
+                'email_verified_at' => now(),
+            ]
+        );
+        $admin->assignRole('admin');
 
-        $this->command->info("Admin: admin@e-klinik.com / admin123");
+        $dokterUser = User::firstOrCreate(
+            ['email' => 'dokter@e-klinik.com'],
+            [
+                'name' => 'Dr. Sari',
+                'password' => Hash::make('dokter123'),
+                'phone' => '081234567891',
+                'is_active' => true,
+                'email_verified_at' => now(),
+            ]
+        );
+        $dokterUser->assignRole('doctor');
 
-        $dokterUser = User::create([
-            'name' => 'Dr. Sari',
-            'email' => 'dokter@e-klinik.com',
-            'password' => Hash::make('dokter123'),
-            'role' => 'doctor',
-            'phone' => '081234567891',
-            'is_active' => true,
-            'email_verified_at' => now(),
-        ]);
+        User::firstOrCreate(
+            ['email' => 'apoteker@e-klinik.com'],
+            [
+                'name' => 'Apoteker Budi',
+                'password' => Hash::make('apoteker123'),
+                'phone' => '081234567892',
+                'is_active' => true,
+                'email_verified_at' => now(),
+            ]
+        )->assignRole('pharmacist');
 
-        $apotekerUser = User::create([
-            'name' => 'Apoteker Budi',
-            'email' => 'apoteker@e-klinik.com',
-            'password' => Hash::make('apoteker123'),
-            'role' => 'pharmacist',
-            'phone' => '081234567892',
-            'is_active' => true,
-            'email_verified_at' => now(),
-        ]);
+        User::firstOrCreate(
+            ['email' => 'laboran@e-klinik.com'],
+            [
+                'name' => 'Laboran Rina',
+                'password' => Hash::make('laboran123'),
+                'phone' => '081234567895',
+                'is_active' => true,
+                'email_verified_at' => now(),
+            ]
+        )->assignRole('laborant');
 
-        User::create([
-            'name' => 'Laboran Rina',
-            'email' => 'laboran@e-klinik.com',
-            'password' => Hash::make('laboran123'),
-            'role' => 'laborant',
-            'phone' => '081234567895',
-            'is_active' => true,
-            'email_verified_at' => now(),
-        ]);
+        User::firstOrCreate(
+            ['email' => 'kasir@e-klinik.com'],
+            [
+                'name' => 'Kasir Dewi',
+                'password' => Hash::make('kasir123'),
+                'phone' => '081234567896',
+                'is_active' => true,
+                'email_verified_at' => now(),
+            ]
+        )->assignRole('cashier');
+
+        User::firstOrCreate(
+            ['email' => 'perawat@e-klinik.com'],
+            [
+                'name' => 'Perawat Ani',
+                'password' => Hash::make('perawat123'),
+                'phone' => '081234567897',
+                'is_active' => true,
+                'email_verified_at' => now(),
+            ]
+        )->assignRole('nurse');
+
+        $this->command->info("Users: admin/dokter/apoteker/laboran/kasir/perawat @e-klinik.com");
 
         $poliData = [
             ['code' => 'UMU', 'name' => 'Poli Umum', 'location' => 'Lantai 1'],
@@ -67,43 +97,52 @@ class MasterDataSeeder extends Seeder
         ];
 
         foreach ($poliData as $p) {
-            Polyclinic::create($p + ['is_active' => true, 'description' => $p['name']]);
+            Polyclinic::firstOrCreate(
+                ['code' => $p['code']],
+                $p + ['is_active' => true, 'description' => $p['name']]
+            );
         }
 
         $poliUmum = Polyclinic::where('code', 'UMU')->first();
         $poliGigi = Polyclinic::where('code', 'GIG')->first();
         $poliAnak = Polyclinic::where('code', 'ANAK')->first();
 
-        Doctor::create([
-            'user_id' => $dokterUser->id,
-            'polyclinic_id' => $poliUmum->id,
-            'code' => 'DR001',
-            'name' => 'Dr. Sari',
-            'specialist' => 'Dokter Umum',
-            'sip_number' => 'SIP-001/2024',
-            'phone' => '081234567891',
-            'is_active' => true,
-        ]);
+        Doctor::firstOrCreate(
+            ['code' => 'DR001'],
+            [
+                'user_id' => $dokterUser->id,
+                'polyclinic_id' => $poliUmum->id,
+                'name' => 'Dr. Sari',
+                'specialist' => 'Dokter Umum',
+                'sip_number' => 'SIP-001/2024',
+                'phone' => '081234567891',
+                'is_active' => true,
+            ]
+        );
 
-        Doctor::create([
-            'polyclinic_id' => $poliGigi->id,
-            'code' => 'DR002',
-            'name' => 'Drg. Bambang',
-            'specialist' => 'Dokter Gigi',
-            'sip_number' => 'SIP-002/2024',
-            'phone' => '081234567893',
-            'is_active' => true,
-        ]);
+        Doctor::firstOrCreate(
+            ['code' => 'DR002'],
+            [
+                'polyclinic_id' => $poliGigi->id,
+                'name' => 'Drg. Bambang',
+                'specialist' => 'Dokter Gigi',
+                'sip_number' => 'SIP-002/2024',
+                'phone' => '081234567893',
+                'is_active' => true,
+            ]
+        );
 
-        Doctor::create([
-            'polyclinic_id' => $poliAnak->id,
-            'code' => 'DR003',
-            'name' => 'Dr. Anita',
-            'specialist' => 'Dokter Anak',
-            'sip_number' => 'SIP-003/2024',
-            'phone' => '081234567894',
-            'is_active' => true,
-        ]);
+        Doctor::firstOrCreate(
+            ['code' => 'DR003'],
+            [
+                'polyclinic_id' => $poliAnak->id,
+                'name' => 'Dr. Anita',
+                'specialist' => 'Dokter Anak',
+                'sip_number' => 'SIP-003/2024',
+                'phone' => '081234567894',
+                'is_active' => true,
+            ]
+        );
 
         $kategori = [
             ['code' => 'ANTIBIOTIK', 'name' => 'Antibiotik', 'description' => 'Obat antibiotik'],
@@ -117,9 +156,9 @@ class MasterDataSeeder extends Seeder
         ];
 
         foreach ($kategori as $k) {
-            MedicineCategory::create($k);
+            MedicineCategory::firstOrCreate(['code' => $k['code']], $k);
         }
 
-        $this->command->info("Laboran: laboran@e-klinik.com / laboran123 — run 'php artisan db:seed --class=LabDataSeeder' to seed lab data");
+        $this->command->info("Master data: 8 poli, 3 dokter, 8 kategori obat");
     }
 }

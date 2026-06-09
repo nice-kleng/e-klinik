@@ -103,6 +103,11 @@ class ObservationService
         return $response;
     }
 
+    public function syncObservation(MedicalRecord $mr): ?array
+    {
+        return $this->createVitalSign($mr);
+    }
+
     public function getObservation(string $ssId): ?array
     {
         return $this->client->getResourceById('Observation', $ssId);

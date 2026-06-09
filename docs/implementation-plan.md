@@ -2,8 +2,10 @@
 
 **Dokumen:** Rencana Implementasi Teknis  
 **Proyek:** e-Klinik - Sistem Informasi Manajemen Klinik  
-**Versi:** 1.0  
-**Terakhir Diperbarui:** Juni 2026  
+**Versi:** 1.1  
+**Terakhir Diperbarui:** Juni 2026
+
+> **Status Terkini:** Fase 1 (Pondasi) selesai. Semua migration (36), model (33), seeder (10), helper (3), trait (7), observer (3), dan template PDF (3) sudah dibuat. Database `e_klinik` sudah terisi penuh (user, poli, dokter, obat-obatan, pasien sampel, ICD-10). Branch: `pendaftaran-antrian`. Lihat [AGENTS.md](../AGENTS.md) untuk ringkasan command dan arsitektur.  
 
 ---
 
@@ -1215,27 +1217,31 @@ Simpan mapping terminologi di tabel internal
 | Setup Proyek Laravel 13                      | `composer create-project laravel/laravel e-klinik`. `.env` dikonfigurasi: `DB_DATABASE=e_klinik`, `SESSION_DRIVER=file`, `CACHE_STORE=file` |
 | Instalasi Dependencies                       | `laravel/breeze` (Blade+Bootstrap), `laravel/sanctum`, `laravel/pail` (logs realtime) — DomPDF & Excel tidak diinstal (belum dibutuhkan) |
 | Konfigurasi Frontend                         | Bootstrap 5 via Vite: `resources/css/app.css` import Bootstrap, `resources/js/app.js` import Bootstrap JS. Build sukses (`app-BKcgrL9x.css` 227kB, `app-cfCUeujM.js` 80kB) |
-| Setup Database                               | MySQL (Laragon), database `e_klinik`, 29 migration (semua tabel termasuk lab, BPJS, Satu Sehat, ICD-10) |
+| Setup Database                               | MySQL (Laragon), database `e_klinik`, 36 migration (semua tabel termasuk lab, BPJS, Satu Sehat, ICD-10, jadwal dokter, attachment, notifikasi, log) |
 | Setup Auth Web                               | Laravel Breeze Blade + Bootstrap 5 (session auth via `routes/auth.php`). Login, register, logout, password reset, email verification |
 | Setup Auth API                               | Laravel Sanctum `auth:sanctum` pada seluruh route `/api/v1/*`. Token Bearer via `POST /sanctum/token`. `app/Models/User` tambah trait `HasApiTokens` |
 | Setup Role Middleware                        | Custom `app/Http/Middleware/RoleMiddleware.php` (bukan spatie). Daftarkan di `bootstrap/app.php` dengan alias `role`. ENUM kolom `role` di users: `admin,doctor,nurse,pharmacist,cashier,laborant` |
 | Setup CORS                                   | `config/cors.php`: `allowed_origins = ['*']`, `paths = ['api/*', 'sanctum/csrf-cookie']`, `supports_credentials = true` |
 | Setup Service Layer                          | Folder `app/Services/` dengan subfolder `BPJS/`, `SatuSehat/`. Service binding via `IntegrationServiceProvider.php` |
-| Migration & Model Dasar                      | 29 migration: users, patients, polyclinics, doctors, queues, medical_records, medicines, prescriptions, inventories, bpjs_*, satusehat_*, lab_*, icd10. 25 model Eloquent |
+| Migration & Model Dasar                      | 36 migration: users, patients, polyclinics, doctors, queues, medical_records, medicines, prescriptions, inventories, bpjs_*, satusehat_*, lab_*, icd10, doctor_schedules, medical_record_details, attachments, bpjs_jadwal, integration_logs, configurations, notifications. 33 model Eloquent |
 | Controller Layer                             | 3 API Controller (`Api/BPJS/VClaim`, `Api/BPJS/Antrol`, `Api/SatuSehat/FHIR`) + 15 Web Controller termasuk `Web/BPJS/*`, `Web/SatuSehat/*` (copy dari API, session auth) |
 | Seeder                                       | 4 user default (admin, dokter, apoteker, laboran — password `*123`), 8 poli, 3 dokter, 8 kategori obat, 5 kategori lab + 20 tes lab, ~1200 ICD-10 via migration |
 | Artisan Commands                             | `satusehat:sync` untuk sinkronasi batch, `composer dev` untuk server + queue + logs + Vite concurrently |
 
 **Deliverables:**
-- Laravel 13 + MySQL running, 29 tabel ter-migrasi
+- Laravel 13 + MySQL running, 36 tabel ter-migrasi
 - Web auth (Breeze Blade) + API auth (Sanctum)
 - Role middleware dengan 6 role (termasuk laborant)
 - CORS siap untuk integrasi lintas domain
 - Service layer BPJS (VClaim, Antrol) & Satu Sehat (FHIR R4)
 - 26 route API (Sanctum) + 40 route JSON internal (session auth) + 90+ route Blade
 - Data seeder: user, poli, dokter, obat, lab, ICD-10
+- Helper (3), Trait (7), Observer (3), PDF template (3)
+- Dokumen `AGENTS.md` untuk OpenCode agent
 
-### Phase 2: Pasien, Antrean & Pendaftaran BPJS (Minggu 3-4)
+> ✅ **Phase 1 SELESAI — Database ter-migrasi & ter-seed, semua komponen pondasi sudah di tempat.**
+
+### Phase 2: Pasien, Antrean & Pendaftaran BPJS (Minggu 3-4) 🟡 *Sedang dikerjakan*
 
 | Aktivitas                                    | Detail                                                                                      |
 | -------------------------------------------- | ------------------------------------------------------------------------------------------- |
@@ -1501,7 +1507,36 @@ e-klinik/
 │   │   ├── LabTest.php
 │   │   ├── LabRequest.php
 │   │   ├── LabRequestItem.php
-│   │   └── LabResult.php
+│   │   ├── LabResult.php
+│   │   ├── DoctorSchedule.php
+│   │   ├── MedicalRecordDetail.php
+│   │   ├── Attachment.php
+│   │   ├── BpjsJadwal.php
+│   │   ├── IntegrationLog.php
+│   │   ├── Configuration.php
+│   │   └── Notification.php
+│   │
+│   ├── Observers/
+│   │   ├── PatientObserver.php
+│   │   ├── MedicalRecordObserver.php
+│   │   └── PrescriptionObserver.php
+│   │
+│   ├── DTOs/
+│   │   └── (tidak digunakan — dihapus)
+│   │
+│   ├── Traits/
+│   │   ├── ApiResponse.php
+│   │   ├── HasCreatedBy.php
+│   │   ├── HasUpdatedBy.php
+│   │   ├── GenerateNoRm.php
+│   │   ├── GenerateNoAntrean.php
+│   │   ├── GenerateNoResep.php
+│   │   └── Filterable.php
+│   │
+│   ├── Helpers/
+│   │   ├── BpjsSignature.php
+│   │   ├── DateHelper.php
+│   │   └── NumberHelper.php
 │   │
 │   ├── Providers/
 │   │   ├── AppServiceProvider.php           # Register IntegrationServiceProvider
@@ -1542,14 +1577,23 @@ e-klinik/
 │   └── satusehat.php                       # Satu Sehat endpoints & credentials
 │
 ├── database/
-│   ├── migrations/                         # 29 migration files
+│   ├── migrations/                         # 36 migration files (terbaru)
 │   │   ├── 2024_01_01_000001_create_users_table.php
-│   │   ├── ... (patients, queues, medical_records, bpjs_*, satusehat_*, lab_*)
+│   │   ├── ... (patients, polyclinics, doctors, queues, medical_records,
+│   │   │      icd10, medicines, suppliers, prescriptions, inventories,
+│   │   │      bpjs_*, satusehat_*, lab_*, attachments)
 │   │   ├── 000021_create_icd10_seeder.php  # Seeder ~1200 ICD-10 codes
 │   │   ├── 000022_create_bpjs_seps_table.php
 │   │   ├── 000023_add_bpjs_sep_id_to_queues_table.php
 │   │   ├── 000024_add_laborant_role_to_users.php
-│   │   └── 000025-000029 (lab migrations)
+│   │   ├── 000025-000029 (lab migrations)
+│   │   ├── 2024_05_27_000030_create_doctor_schedules_table.php
+│   │   ├── 2024_05_27_000031_create_medical_record_details_table.php
+│   │   ├── 2024_05_27_000032_create_attachments_table.php
+│   │   ├── 2024_05_27_000033_create_bpjs_jadwals_table.php
+│   │   ├── 2024_05_27_000034_create_integration_logs_table.php
+│   │   ├── 2024_05_27_000035_create_configurations_table.php
+│   │   └── 2024_05_27_000036_create_notifications_table.php
 │   └── seeders/
 │
 ├── resources/
@@ -1575,7 +1619,11 @@ e-klinik/
 │       ├── lab-test-categories/            # Index, create, edit
 │       ├── lab-tests/                      # Index, create, edit, show
 │       ├── lab-requests/                   # Index, create, show
-│       └── lab-results/                    # Index, input, edit
+│       ├── lab-results/                    # Index, input, edit
+│       └── pdf/                            # Printable templates
+│           ├── rekam-medis.blade.php       # Cetak rekam medis
+│           ├── resep.blade.php             # Cetak resep obat
+│           └── surat-rujukan.blade.php     # Cetak surat rujukan
 │
 ├── routes/
 │   ├── web.php                             # Blade + JSON internal routes (130+ route, auth + role protected)
@@ -1643,22 +1691,8 @@ e-klinik/
 │   │       ├── SatusehatICareService.php
 │   │       └── SatusehatTerminologyService.php
 │   │
-│   ├── Clients/
-│   │   ├── BpjsClient.php                    # HTTP client BPJS (Guzzle)
-│   │   └── SatusehatClient.php               # HTTP client Satu Sehat (Guzzle)
-│   │
 │   ├── DTOs/
-│   │   ├── PatientDto.php                    # Data transfer object pasien
-│   │   ├── QueueDto.php
-│   │   ├── MedicalRecordDto.php
-│   │   ├── PrescriptionDto.php
-│   │   ├── BpjsSepDto.php
-│   │   ├── BpjsClaimDto.php
-│   │   └── Satusehat/
-│   │       ├── FhirPatientDto.php
-│   │       ├── FhirEncounterDto.php
-│   │       ├── FhirConditionDto.php
-│   │       └── FhirObservationDto.php
+│   │   └── (tidak digunakan — dihapus)
 │   │
 │   ├── Traits/
 │   │   ├── ApiResponse.php                   # Standard JSON response
@@ -1671,8 +1705,6 @@ e-klinik/
 │   │
 │   └── Helpers/
 │       ├── BpjsSignature.php                 # Generate hash signature BPJS
-│       ├── BpjsConverter.php                 # Format converter BPJS
-│       ├── SatusehatConverter.php            # Mapping ke FHIR format
 │       ├── DateHelper.php                    # Format tanggal
 │       └── NumberHelper.php                  # Format angka/rupiah
 │
@@ -2210,7 +2242,6 @@ Hanya untuk integrasi eksternal/aplikasi mobile (BPJS Kesehatan & Satu Sehat Kem
 | `maatwebsite/laravel-excel`       | ^3.1      | Export/import data ke Excel                                             |
 | `intervention/image`              | ^3.x      | Manipulasi gambar (resize foto pasien, thumbnail)                       |
 | `spatie/laravel-permission`       | ^6.0      | Role & permission management (opsional, bisa custom)                    |
-| `spatie/data-transfer-object`     | ^3.9      | DTO untuk data transfer antar layer (opsional)                          |
 | `mike42/escpos-php`               | ^2.2      | Cetak ke thermal printer (ESC/POS protocol)                             |
 | `predis/predis`                   | ^2.2      | Redis client (opsional, jika menggunakan Redis)                         |
 | `giggsey/libphonenumber-for-php`  | ^8.13     | Validasi & format nomor telepon internasional (opsional)                |
@@ -2254,5 +2285,11 @@ Hanya untuk integrasi eksternal/aplikasi mobile (BPJS Kesehatan & Satu Sehat Kem
 | WebSocket Server (Pusher/laravel-websockets) | Realtime update display antrean                              |
 
 ---
+
+## Change Log
+
+| Versi | Tanggal       | Perubahan                                                                 |
+|-------|---------------|---------------------------------------------------------------------------|
+| 1.1   | Juni 2026     | Update status Phase 1 ✅ selesai. Tambah 7 migration baru, 7 model baru, Helpers (3), Traits (7), Observers (3), PDF templates (3). Register observer di AppServiceProvider. DTO dihapus (tidak terpakai). Dokumen AGENTS.md ditambahkan. |
 
 *Dokumen ini adalah panduan implementasi teknis untuk proyek e-Klinik - Sistem Informasi Manajemen Klinik. Dokumen ini akan terus diperbarui seiring dengan perkembangan implementasi.*

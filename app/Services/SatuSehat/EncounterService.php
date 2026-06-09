@@ -56,6 +56,15 @@ class EncounterService
         return $response;
     }
 
+    public function syncEncounter(MedicalRecord $mr): ?array
+    {
+        $resourceRef = $this->getResourceReference($mr, 'Encounter');
+        if ($resourceRef && $resourceRef->status === 'synced') {
+            return $this->updateEncounter($mr);
+        }
+        return $this->createEncounter($mr);
+    }
+
     public function getEncounter(string $ssId): ?array
     {
         return $this->client->getResourceById('Encounter', $ssId);

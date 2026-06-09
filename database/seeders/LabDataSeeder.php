@@ -17,11 +17,10 @@ class LabDataSeeder extends Seeder
                 'name' => 'Laboran Rina',
                 'email' => 'laboran@e-klinik.com',
                 'password' => Hash::make('laboran123'),
-                'role' => 'laborant',
                 'phone' => '081234567895',
                 'is_active' => true,
                 'email_verified_at' => now(),
-            ]);
+            ])->assignRole('laborant');
         }
 
         $labCatHematologi = LabTestCategory::firstOrCreate(

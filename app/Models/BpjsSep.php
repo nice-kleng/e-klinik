@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\HasCreatedBy;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BpjsSep extends Model
 {
+    use HasCreatedBy, HasFactory;
     protected $fillable = [
         'patient_id',
         'queue_id',
