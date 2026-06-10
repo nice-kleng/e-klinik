@@ -192,6 +192,22 @@
     const polyclinicSelect = document.getElementById('polyclinic_id');
     const doctorSelect = document.getElementById('doctor_id');
 
+    const newPatientInputs = [
+        'nik', 'name', 'birth_date',
+        document.querySelector('input[name="phone"]'),
+        document.querySelector('input[name="address"]'),
+    ];
+    const genderRadios = document.querySelectorAll('input[name="gender"]');
+
+    function toggleNewPatientFields(enabled) {
+        const inputs = newPatientInputs.filter(Boolean);
+        inputs.forEach(el => { el.disabled = !enabled; });
+        document.getElementById('nik').disabled = !enabled;
+        document.getElementById('name').disabled = !enabled;
+        document.getElementById('birth_date').disabled = !enabled;
+        genderRadios.forEach(r => { r.disabled = !enabled; });
+    }
+
     function resetSearch() {
         patientFound.classList.add('d-none');
         patientNotFound.classList.add('d-none');
@@ -219,6 +235,8 @@
         searchStatus.textContent = 'Mencari...';
         searchStatus.className = 'mt-1 small text-info';
 
+        toggleNewPatientFields(false);
+
         fetch('{{ route("registration.search") }}?nik=' + encodeURIComponent(nik))
             .then(res => res.json())
             .then(data => {
@@ -226,6 +244,7 @@
                     patientFound.classList.remove('d-none');
                     patientNotFound.classList.add('d-none');
                     newPatientForm.classList.add('d-none');
+                    toggleNewPatientFields(false);
 
                     document.getElementById('patientName').textContent = data.data.name;
                     document.getElementById('patientRm').textContent = data.data.no_rm;
@@ -249,6 +268,7 @@
                         document.querySelector('input[name="insurance_number"]').value = data.data.insurance_number;
                     }
                 } else {
+                    toggleNewPatientFields(true);
                     patientFound.classList.add('d-none');
                     patientNotFound.classList.remove('d-none');
                     newPatientForm.classList.remove('d-none');

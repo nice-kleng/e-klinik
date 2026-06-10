@@ -60,7 +60,7 @@
                             <td>
                                 <a href="{{ route('patients.show', $patient) }}" class="btn btn-sm btn-info">Detail</a>
                                 <a href="{{ route('patients.edit', $patient) }}" class="btn btn-sm btn-warning">Edit</a>
-                                <form action="{{ route('patients.destroy', $patient) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus pasien ini?')">
+                                <form action="{{ route('patients.destroy', $patient) }}" method="POST" class="d-inline" data-confirm="Hapus pasien ini?">
                                     @csrf
                                     @method('DELETE')
                                     <button class="btn btn-sm btn-danger">Hapus</button>

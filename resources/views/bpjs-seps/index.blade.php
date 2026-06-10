@@ -71,7 +71,7 @@
                             <td>
                                 <a href="{{ route('bpjs-seps.show', $sep) }}" class="btn btn-sm btn-info">Detail</a>
                                 @if($sep->status == 'active')
-                                    <form action="{{ route('bpjs-seps.destroy', $sep) }}" method="POST" class="d-inline" onsubmit="return confirm('Nonaktifkan SEP {{ $sep->no_sep }}?')">
+                                    <form action="{{ route('bpjs-seps.destroy', $sep) }}" method="POST" class="d-inline" data-confirm="Nonaktifkan SEP {{ $sep->no_sep }}?">
                                         @csrf @method('DELETE')
                                         <button class="btn btn-sm btn-danger">Nonaktifkan</button>
                                     </form>

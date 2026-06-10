@@ -6,7 +6,7 @@
         <h4 class="mb-0">Detail SEP</h4>
         <div class="d-flex gap-2">
             @if($bpjsSep->status == 'active')
-                <form action="{{ route('bpjs-seps.destroy', $bpjsSep) }}" method="POST" onsubmit="return confirm('Nonaktifkan SEP {{ $bpjsSep->no_sep }}?')">
+                <form action="{{ route('bpjs-seps.destroy', $bpjsSep) }}" method="POST" data-confirm="Nonaktifkan SEP {{ $bpjsSep->no_sep }}?">
                     @csrf @method('DELETE')
                     <button class="btn btn-danger">Nonaktifkan SEP</button>
                 </form>

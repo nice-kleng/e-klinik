@@ -122,7 +122,7 @@
                             </form>
                         @endif
                         @if(in_array($queue->status, ['waiting', 'called']))
-                            <form action="{{ route('queues.cancel', $queue) }}" method="POST" onsubmit="return confirm('Batalkan antrean ini?')">
+                            <form action="{{ route('queues.cancel', $queue) }}" method="POST" data-confirm="Batalkan antrean ini?">
                                 @csrf
                                 <button class="btn btn-danger">Batalkan</button>
                             </form>

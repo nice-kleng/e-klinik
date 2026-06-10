@@ -35,9 +35,18 @@
                 </div>
             </nav>
 
-            <main class="flex-grow-1 p-4 bg-light">
-                @yield('content')
-            </main>
+    <main class="flex-grow-1 p-4 bg-light">
+        @yield('content')
+    </main>
+
+    <script>
+        window.flash = {
+            success: @json(session('success')),
+            error: @json(session('error')),
+            warning: @json(session('warning')),
+            info: @json(session('info')),
+        };
+    </script>
         </div>
     </div>
 
