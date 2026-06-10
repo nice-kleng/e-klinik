@@ -15,7 +15,7 @@
                     <h4 class="mb-1">{{ config('app.name', 'e-Klinik') }}</h4>
                     <small class="text-muted">Sistem Informasi Manajemen Klinik</small>
                 </div>
-                @yield('content')
+                {{ $slot }}
             </div>
         </div>
     </div>
