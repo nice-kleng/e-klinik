@@ -9,6 +9,11 @@
                 Dashboard
             </a>
         </li>
+        <li>
+            <a href="{{ route('registration.index') }}" class="nav-link text-white {{ request()->routeIs('registration.*') ? 'active' : '' }}">
+                Pendaftaran
+            </a>
+        </li>
 
         {{-- Pasien --}}
         <li class="nav-item mt-2">

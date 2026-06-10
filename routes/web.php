@@ -15,6 +15,7 @@ use App\Http\Controllers\Web\LabTestCategoryController;
 use App\Http\Controllers\Web\LabTestController;
 use App\Http\Controllers\Web\LabRequestController;
 use App\Http\Controllers\Web\LabResultController;
+use App\Http\Controllers\Web\RegistrationController;
 use App\Http\Controllers\Web\DoctorController;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +25,13 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Registration (Pendaftaran) — admin, cashier
+    Route::prefix('registration')->name('registration.')->middleware('role:admin|cashier')->group(function () {
+        Route::get('/', [RegistrationController::class, 'index'])->name('index');
+        Route::get('/search', [RegistrationController::class, 'searchPatient'])->name('search');
+        Route::post('/', [RegistrationController::class, 'store'])->name('store');
+    });
 
     // Patients — admin, doctor, cashier
     Route::resource('patients', PatientController::class)
