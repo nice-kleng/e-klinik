@@ -5,6 +5,9 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="mb-0">Detail Pasien</h4>
         <div class="d-flex gap-2">
+            <a href="{{ route('patients.print-card', $patient) }}" class="btn btn-info" target="_blank">
+                <i class="bi bi-printer"></i> Cetak Kartu
+            </a>
             <a href="{{ route('patients.edit', $patient) }}" class="btn btn-warning">Edit</a>
             <a href="{{ route('patients.index') }}" class="btn btn-outline-secondary">Kembali</a>
         </div>
@@ -96,6 +99,32 @@
                         <tr>
                             <td class="text-muted">Pekerjaan</td>
                             <td>{{ $patient->occupation ?? '-' }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+                    <div class="card border-0 shadow-sm mt-3">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">Data Sosial</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm mb-0">
+                        <tr>
+                            <td class="text-muted" style="width:180px">Pendidikan</td>
+                            <td>{{ $patient->education ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Nama Ibu Kandung</td>
+                            <td>{{ $patient->mother_name ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Kontak Darurat</td>
+                            <td>{{ $patient->emergency_contact ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Alergi</td>
+                            <td>{{ $patient->allergy ?? '-' }}</td>
                         </tr>
                     </table>
                 </div>

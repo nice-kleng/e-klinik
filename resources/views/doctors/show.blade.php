@@ -79,7 +79,7 @@
                                 <tr>
                                     <td>{{ $queue->queue_date?->format('d/m/Y') }}</td>
                                     <td>{{ $queue->queue_number }}</td>
-                                    <td>{{ $queue->patient->name ?? '-' }}</td>
+                                    <td>{{ $queue->registration?->patient?->name ?? '-' }}</td>
                                     <td>
                                         @php
                                             $badge = match($queue->status) {

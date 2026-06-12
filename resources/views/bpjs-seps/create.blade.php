@@ -37,7 +37,7 @@
                             <option value="">Tidak Ada</option>
                             @foreach($queues as $q)
                                 <option value="{{ $q->id }}" {{ old('queue_id') == $q->id ? 'selected' : '' }}>
-                                    {{ $q->queue_number }} - {{ $q->patient->name }} ({{ $q->polyclinic->name ?? '' }})
+                                    {{ $q->queue_number }} - {{ $q->registration?->patient?->name ?? '-' }} ({{ $q->polyclinic->name ?? '' }})
                                 </option>
                             @endforeach
                         </select>

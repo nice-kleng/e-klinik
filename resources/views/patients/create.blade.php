@@ -179,6 +179,41 @@
             </div>
         </div>
 
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Data Sosial</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Pendidikan</label>
+                        <select name="education" class="form-select @error('education') is-invalid @enderror">
+                            <option value="">-- Pilih --</option>
+                            @foreach(['SD','SMP','SMA','D1','D2','D3','S1','S2','S3'] as $e)
+                                <option value="{{ $e }}" {{ old('education') == $e ? 'selected' : '' }}>{{ $e }}</option>
+                            @endforeach
+                        </select>
+                        @error('education') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Nama Ibu Kandung</label>
+                        <input type="text" name="mother_name" class="form-control @error('mother_name') is-invalid @enderror" value="{{ old('mother_name') }}">
+                        @error('mother_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Kontak Darurat</label>
+                        <input type="text" name="emergency_contact" class="form-control @error('emergency_contact') is-invalid @enderror" value="{{ old('emergency_contact') }}" placeholder="Nama & No. Telepon">
+                        @error('emergency_contact') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Alergi</label>
+                        <textarea name="allergy" class="form-control @error('allergy') is-invalid @enderror" rows="2">{{ old('allergy') }}</textarea>
+                        @error('allergy') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="d-flex justify-content-end gap-2">
             <a href="{{ route('patients.index') }}" class="btn btn-outline-secondary">Batal</a>
             <button type="submit" class="btn btn-primary">Simpan</button>

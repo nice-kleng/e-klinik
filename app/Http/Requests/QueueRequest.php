@@ -17,8 +17,7 @@ class QueueRequest extends FormRequest
             'patient_id' => 'required|integer|exists:patients,id',
             'polyclinic_id' => 'required|integer|exists:polyclinics,id',
             'doctor_id' => 'nullable|integer|exists:doctors,id',
-            'service_type' => 'required|string|in:umum,bpjs,spesialis,gigi,kia,lab',
-            'notes' => 'nullable|string|max:500',
+            'source' => 'nullable|in:walk_in,mjkn,rujukan',
         ];
     }
 
@@ -30,8 +29,6 @@ class QueueRequest extends FormRequest
             'polyclinic_id.required' => 'Poli wajib dipilih',
             'polyclinic_id.exists' => 'Poli tidak ditemukan',
             'doctor_id.exists' => 'Dokter tidak ditemukan',
-            'service_type.required' => 'Jenis layanan wajib diisi',
-            'service_type.in' => 'Jenis layanan tidak valid',
         ];
     }
 }

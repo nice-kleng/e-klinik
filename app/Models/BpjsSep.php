@@ -13,6 +13,7 @@ class BpjsSep extends Model
     protected $fillable = [
         'patient_id',
         'queue_id',
+        'registration_id',
         'no_sep',
         'no_kartu',
         'tgl_pelayanan',
@@ -42,6 +43,11 @@ class BpjsSep extends Model
     public function queue(): BelongsTo
     {
         return $this->belongsTo(Queue::class, 'queue_id');
+    }
+
+    public function registration(): BelongsTo
+    {
+        return $this->belongsTo(Registration::class, 'registration_id');
     }
 
     public function creator(): BelongsTo

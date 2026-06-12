@@ -36,9 +36,14 @@ class Doctor extends Model
         return $this->belongsTo(Polyclinic::class, 'polyclinic_id');
     }
 
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(Registration::class, 'doctor_id');
+    }
+
     public function queues(): HasMany
     {
-        return $this->hasMany(Queue::class, 'doctor_id');
+        return $this->hasManyThrough(Queue::class, Registration::class, 'doctor_id', 'registration_id');
     }
 
     public function medicalRecords(): HasMany

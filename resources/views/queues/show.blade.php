@@ -9,134 +9,141 @@
 
     @include('components.alert')
 
-    <div class="row g-4">
+    @php $reg = $queue->registration; @endphp
+
+    <div class="row g-3">
         <div class="col-md-6">
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white">
                     <h6 class="mb-0">Informasi Antrean</h6>
                 </div>
                 <div class="card-body">
-                    <table class="table table-sm mb-0">
+                    <table class="table table-sm">
                         <tr>
-                            <td class="text-muted" style="width:160px">No. Antrean</td>
+                            <td class="text-muted" width="150">No. Antrean</td>
                             <td><strong>{{ $queue->queue_number }}</strong></td>
                         </tr>
                         <tr>
+                            <td class="text-muted">No. Registrasi</td>
+                            <td>{{ $reg?->registration_number ?? '-' }}</td>
+                        </tr>
+                        <tr>
                             <td class="text-muted">Tanggal</td>
-                            <td>{{ $queue->queue_date?->format('d/m/Y') }}</td>
+                            <td>{{ $queue->queue_date->format('d/m/Y') }}</td>
                         </tr>
                         <tr>
                             <td class="text-muted">Poliklinik</td>
-                            <td>{{ $queue->polyclinic->name ?? '-' }}</td>
+                            <td>{{ $queue->polyclinic?->name ?? '-' }}</td>
                         </tr>
                         <tr>
                             <td class="text-muted">Dokter</td>
-                            <td>{{ $queue->doctor->name ?? '-' }}</td>
+                            <td>{{ $reg?->doctor?->name ?? '-' }}</td>
                         </tr>
                         <tr>
-                            <td class="text-muted">Jenis Layanan</td>
-                            <td>{{ $queue->service_type ?? '-' }}</td>
+                            <td class="text-muted">Sumber</td>
+                            <td><span class="badge bg-{{ $queue->source == 'mjkn' ? 'primary' : 'secondary' }}">{{ $queue->source }}</span></td>
                         </tr>
                         <tr>
                             <td class="text-muted">Status</td>
                             <td>
                                 @php
                                     $badge = match($queue->status) {
-                                        'waiting' => 'bg-warning', 'called' => 'bg-info',
-                                        'in_progress' => 'bg-primary', 'completed' => 'bg-success',
-                                        'cancelled' => 'bg-secondary', default => 'bg-secondary'
-                                    };
-                                    $label = match($queue->status) {
-                                        'waiting' => 'Menunggu', 'called' => 'Dipanggil',
-                                        'in_progress' => 'Diproses', 'completed' => 'Selesai',
-                                        'cancelled' => 'Dibatalkan', default => $queue->status
+                                        'waiting' => 'bg-warning',
+                                        'called' => 'bg-info',
+                                        'in_progress' => 'bg-primary',
+                                        'completed' => 'bg-success',
+                                        default => 'bg-secondary'
                                     };
                                 @endphp
-                                <span class="badge {{ $badge }}">{{ $label }}</span>
+                                <span class="badge {{ $badge }}">{{ $queue->status }}</span>
                             </td>
                         </tr>
-                        @if($queue->check_in_at)
-                            <tr><td class="text-muted">Check In</td><td>{{ $queue->check_in_at->format('d/m/Y H:i') }}</td></tr>
-                        @endif
-                        @if($queue->called_at)
-                            <tr><td class="text-muted">Dipanggil</td><td>{{ $queue->called_at->format('d/m/Y H:i') }}</td></tr>
-                        @endif
-                        @if($queue->completed_at)
-                            <tr><td class="text-muted">Selesai</td><td>{{ $queue->completed_at->format('d/m/Y H:i') }}</td></tr>
-                        @endif
-                    </table>
-                </div>
-            </div>
-
-            <div class="card border-0 shadow-sm mt-3">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0">Data Pasien</h6>
-                </div>
-                <div class="card-body">
-                    <table class="table table-sm mb-0">
                         <tr>
-                            <td class="text-muted" style="width:160px">Nama</td>
-                            <td>{{ $queue->patient->name ?? '-' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted">No. RM</td>
-                            <td>{{ $queue->patient->no_rm ?? '-' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted">NIK</td>
-                            <td>{{ $queue->patient->nik ?? '-' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted">Telepon</td>
-                            <td>{{ $queue->patient->phone ?? '-' }}</td>
+                            <td class="text-muted">Check In</td>
+                            <td>{{ $queue->check_in_at?->format('H:i:s') ?? '-' }}</td>
                         </tr>
                     </table>
-                    <a href="{{ route('patients.show', $queue->patient) }}" class="btn btn-sm btn-outline-info mt-2">Detail Pasien</a>
                 </div>
             </div>
         </div>
 
         <div class="col-md-6">
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white">
-                    <h6 class="mb-0">Aksi</h6>
+                    <h6 class="mb-0">Data Pasien</h6>
                 </div>
                 <div class="card-body">
-                    <div class="d-flex flex-wrap gap-2">
-                        @if($queue->status == 'waiting')
-                            <form action="{{ route('queues.call', $queue) }}" method="POST">
-                                @csrf
-                                <button class="btn btn-info">Panggil</button>
-                            </form>
-                        @endif
-                        @if(in_array($queue->status, ['waiting', 'called']))
-                            <form action="{{ route('queues.in-progress', $queue) }}" method="POST">
-                                @csrf
-                                <button class="btn btn-primary">Proses</button>
-                            </form>
-                        @endif
-                        @if(in_array($queue->status, ['waiting', 'called', 'in_progress']))
-                            <form action="{{ route('queues.complete', $queue) }}" method="POST">
-                                @csrf
-                                <button class="btn btn-success">Selesai</button>
-                            </form>
-                        @endif
-                        @if(in_array($queue->status, ['waiting', 'called']))
-                            <form action="{{ route('queues.cancel', $queue) }}" method="POST" data-confirm="Batalkan antrean ini?">
-                                @csrf
-                                <button class="btn btn-danger">Batalkan</button>
-                            </form>
-                        @endif
-                    </div>
+                    @if($reg?->patient)
+                    <table class="table table-sm">
+                        <tr>
+                            <td class="text-muted" width="150">No. RM</td>
+                            <td><strong>{{ $reg->patient->no_rm }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">NIK</td>
+                            <td>{{ $reg->patient->nik }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Nama</td>
+                            <td>{{ $reg->patient->name }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Tgl Lahir</td>
+                            <td>{{ $reg->patient->birth_date?->format('d/m/Y') ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Umur</td>
+                            <td>{{ $reg->age_text }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">JK</td>
+                            <td>{{ $reg->patient->gender == 'L' ? 'Laki-laki' : 'Perempuan' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Telepon</td>
+                            <td>{{ $reg->patient->phone ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Jenis Bayar</td>
+                            <td>{{ $reg->patient->insurance_type ?? '-' }}</td>
+                        </tr>
+                    </table>
+                    @else
+                        <p class="text-muted">Data pasien tidak tersedia</p>
+                    @endif
+                </div>
+            </div>
+        </div>
 
-                    @if($queue->medicalRecord)
-                        <hr>
-                        <h6>Rekam Medis</h6>
-                        <p class="mb-1">Telah dibuat pada {{ $queue->medicalRecord->created_at->format('d/m/Y H:i') }}</p>
-                        <a href="{{ route('medical-records.show', $queue->medicalRecord) }}" class="btn btn-sm btn-info">Lihat Rekam Medis</a>
-                    @elseif(in_array($queue->status, ['in_progress', 'completed']))
-                        <hr>
-                        <a href="{{ route('medical-records.create', ['queue_id' => $queue->id, 'patient_id' => $queue->patient_id]) }}" class="btn btn-primary">Buat Rekam Medis</a>
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">Riwayat Panggilan</h6>
+                </div>
+                <div class="card-body p-0">
+                    @if($queue->queueCalls->isEmpty())
+                        <div class="text-center py-3 text-muted">Belum ada panggilan</div>
+                    @else
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Dipanggil Oleh</th>
+                                    <th>Waktu Panggil</th>
+                                    <th>Waktu Respon</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($queue->queueCalls as $call)
+                                <tr>
+                                    <td>{{ $call->call_sequence }}</td>
+                                    <td>{{ $call->caller?->name ?? '-' }}</td>
+                                    <td>{{ $call->called_at?->format('H:i:s') }}</td>
+                                    <td>{{ $call->responded_at?->format('H:i:s') ?? '-' }}</td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     @endif
                 </div>
             </div>

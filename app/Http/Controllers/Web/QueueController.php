@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\Doctor;
-use App\Models\Patient;
 use App\Models\Polyclinic;
 use App\Models\Queue;
+use App\Models\Registration;
 use App\Services\QueueService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -29,7 +29,7 @@ class QueueController extends Controller
         $polyclinicId = $request->get('polyclinic_id');
         $status = $request->get('status');
 
-        $query = Queue::with(['patient', 'polyclinic', 'doctor'])
+        $query = Queue::with(['registration.patient', 'registration.doctor', 'polyclinic'])
             ->where('queue_date', $date);
 
         if ($polyclinicId) {
@@ -40,58 +40,24 @@ class QueueController extends Controller
             $query->where('status', $status);
         }
 
-        $queues = $query->orderBy('id', 'asc')->paginate(20)->withQueryString();
+        $queues = $query->orderBy('queue_sequence', 'asc')->paginate(20)->withQueryString();
 
         $polyclinics = Polyclinic::where('is_active', true)->orderBy('name')->get();
 
         return view('queues.index', compact('queues', 'polyclinics', 'date', 'polyclinicId', 'status'));
     }
 
-    public function create(): View
-    {
-        $patients = Patient::orderBy('name')->get();
-        $polyclinics = Polyclinic::where('is_active', true)->orderBy('name')->get();
-        $doctors = Doctor::with('polyclinic')->where('is_active', true)->orderBy('name')->get();
-
-        return view('queues.create', compact('patients', 'polyclinics', 'doctors'));
-    }
-
-    public function store(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'patient_id' => 'required|exists:patients,id',
-            'polyclinic_id' => 'required|exists:polyclinics,id',
-            'doctor_id' => 'nullable|exists:doctors,id',
-            'service_type' => 'required|string|in:umum,BPJS,Asuransi',
-            'notes' => 'nullable|string',
-        ]);
-
-        try {
-            $patient = Patient::findOrFail($validated['patient_id']);
-            $polyclinic = Polyclinic::findOrFail($validated['polyclinic_id']);
-            $doctor = ($validated['doctor_id'] ?? null) ? Doctor::find($validated['doctor_id']) : null;
-
-            $this->queueService->registerQueue(
-                $patient,
-                $polyclinic,
-                $doctor,
-                $validated['service_type']
-            );
-
-            return redirect()->route('queues.index')
-                ->with('success', 'Antrian berhasil ditambahkan');
-        } catch (\Exception $e) {
-            Log::error('Gagal menambahkan antrian: ' . $e->getMessage());
-
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Gagal menambahkan antrian: ' . $e->getMessage());
-        }
-    }
-
     public function show(Queue $queue): View
     {
-        $queue->load(['patient', 'polyclinic', 'doctor', 'creator', 'medicalRecord']);
+        $queue->load([
+            'registration.patient',
+            'registration.doctor',
+            'registration.polyclinic',
+            'polyclinic',
+            'creator',
+            'medicalRecord',
+            'queueCalls',
+        ]);
 
         return view('queues.show', compact('queue'));
     }
@@ -99,10 +65,16 @@ class QueueController extends Controller
     public function call(Queue $queue): RedirectResponse
     {
         try {
-            $this->queueService->callNext($queue->polyclinic->code);
+            $polyclinic = $queue->polyclinic;
+            $nextQueue = $this->queueService->callNext($polyclinic);
+
+            if (!$nextQueue) {
+                return redirect()->route('queues.index')
+                    ->with('info', 'Tidak ada antrean yang menunggu');
+            }
 
             return redirect()->route('queues.index')
-                ->with('success', 'Antrian dipanggil');
+                ->with('success', 'Antrean ' . $nextQueue->queue_number . ' dipanggil');
         } catch (\Exception $e) {
             return redirect()->back()
                 ->with('error', 'Gagal memanggil antrian: ' . $e->getMessage());
@@ -115,7 +87,7 @@ class QueueController extends Controller
             $this->queueService->inProgress($queue);
 
             return redirect()->route('queues.index')
-                ->with('success', 'Status antrian diubah menjadi in progress');
+                ->with('success', 'Status antrean diubah menjadi in progress');
         } catch (\Exception $e) {
             return redirect()->back()
                 ->with('error', 'Gagal mengubah status: ' . $e->getMessage());
@@ -128,10 +100,10 @@ class QueueController extends Controller
             $this->queueService->complete($queue);
 
             return redirect()->route('queues.index')
-                ->with('success', 'Antrian selesai');
+                ->with('success', 'Antrean selesai');
         } catch (\Exception $e) {
             return redirect()->back()
-                ->with('error', 'Gagal menyelesaikan antrian: ' . $e->getMessage());
+                ->with('error', 'Gagal menyelesaikan antrean: ' . $e->getMessage());
         }
     }
 
@@ -141,22 +113,41 @@ class QueueController extends Controller
             $this->queueService->cancel($queue);
 
             return redirect()->route('queues.index')
-                ->with('success', 'Antrian dibatalkan');
+                ->with('success', 'Antrean dibatalkan');
         } catch (\Exception $e) {
             return redirect()->back()
-                ->with('error', 'Gagal membatalkan antrian: ' . $e->getMessage());
+                .with('error', 'Gagal membatalkan antrean: ' . $e->getMessage());
         }
     }
 
     public function display(): View
     {
-        $polyclinics = Polyclinic::where('is_active', true)->with(['queues' => function ($query) {
-            $query->where('queue_date', now()->toDateString())
+        $polyclinics = Polyclinic::where('is_active', true)->get()->map(function ($p) {
+            $queues = Queue::with(['registration.patient', 'registration.doctor'])
+                ->where('polyclinic_id', $p->id)
+                ->whereDate('queue_date', now()->toDateString())
                 ->whereIn('status', ['waiting', 'called', 'in_progress'])
-                ->orderBy('id', 'asc')
-                ->with(['patient', 'doctor']);
-        }])->get();
+                ->orderBy('queue_sequence', 'asc')
+                ->get();
+
+            $p->queues = $queues;
+            return $p;
+        });
 
         return view('queues.display', compact('polyclinics'));
+    }
+
+    public function history(Registration $registration): View
+    {
+        $registration->load([
+            'patient',
+            'polyclinic',
+            'doctor',
+            'queue.queueCalls',
+            'queue.queueMilestones',
+            'medicalRecords',
+        ]);
+
+        return view('queues.history', compact('registration'));
     }
 }

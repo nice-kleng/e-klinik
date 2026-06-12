@@ -1,3 +1,7 @@
+@php
+    $user = Auth::user();
+    $role = $user?->getRoleNames()->first();
+@endphp
 <div class="d-flex flex-column flex-shrink-0 p-3 text-bg-dark" id="sidebar" style="width: 260px;">
     <a href="{{ route('dashboard') }}" class="d-flex align-items-center mb-3 text-white text-decoration-none">
         <span class="fs-5 fw-semibold">e-Klinik</span>
@@ -9,13 +13,16 @@
                 Dashboard
             </a>
         </li>
+
+        @role('admin|receptionist')
         <li>
             <a href="{{ route('registration.index') }}" class="nav-link text-white {{ request()->routeIs('registration.*') ? 'active' : '' }}">
                 Pendaftaran
             </a>
         </li>
+        @endrole
 
-        {{-- Pasien --}}
+        @role('admin|receptionist|doctor')
         <li class="nav-item mt-2">
             <small class="text-secondary text-uppercase px-2">Master Data</small>
         </li>
@@ -24,6 +31,9 @@
                 Pasien
             </a>
         </li>
+        @endrole
+
+        @role('admin')
         <li>
             <a href="{{ route('polyclinics.index') }}" class="nav-link text-white {{ request()->routeIs('polyclinics.*') ? 'active' : '' }}">
                 Poliklinik
@@ -34,13 +44,18 @@
                 Dokter
             </a>
         </li>
+        @endrole
+
+        @role('admin|doctor')
         <li>
             <a href="{{ route('diagnoses.index') }}" class="nav-link text-white {{ request()->routeIs('diagnoses.*') ? 'active' : '' }}">
                 ICD-10 Diagnosa
             </a>
         </li>
+        @endrole
 
         {{-- Layanan --}}
+        @role('admin|receptionist|doctor')
         <li class="nav-item mt-2">
             <small class="text-secondary text-uppercase px-2">Layanan</small>
         </li>
@@ -49,11 +64,15 @@
                 Antrean
             </a>
         </li>
+        @endrole
+
         <li>
             <a href="{{ route('queues.display') }}" class="nav-link text-white {{ request()->routeIs('queues.display*') ? 'active' : '' }}">
                 Display Antrean
             </a>
         </li>
+
+        @role('admin|doctor')
         <li>
             <a href="{{ route('medical-records.index') }}" class="nav-link text-white {{ request()->routeIs('medical-records.*') ? 'active' : '' }}">
                 Rekam Medis
@@ -64,8 +83,9 @@
                 Resep
             </a>
         </li>
+        @endrole
 
-        {{-- BPJS --}}
+        @role('admin|receptionist|doctor')
         <li class="nav-item mt-2">
             <small class="text-secondary text-uppercase px-2">BPJS</small>
         </li>
@@ -74,8 +94,9 @@
                 SEP BPJS
             </a>
         </li>
+        @endrole
 
-        {{-- Laboratorium --}}
+        @role('admin|doctor|laborant')
         <li class="nav-item mt-2">
             <small class="text-secondary text-uppercase px-2">Laboratorium</small>
         </li>
@@ -99,8 +120,9 @@
                 Kategori Tes
             </a>
         </li>
+        @endrole
 
-        {{-- Farmasi --}}
+        @role('admin|pharmacist')
         <li class="nav-item mt-2">
             <small class="text-secondary text-uppercase px-2">Farmasi & Inventaris</small>
         </li>
@@ -119,10 +141,11 @@
                 Laporan
             </a>
         </li>
+        @endrole
     </ul>
     <hr>
     <div class="text-white small px-2">
-        {{ Auth::user()->name }}<br>
-        <span class="text-secondary">{{ Auth::user()->getRoleNames()->first() ?? 'User' }}</span>
+        {{ $user->name }}<br>
+        <span class="text-secondary">{{ $role ?? 'User' }}</span>
     </div>
 </div>

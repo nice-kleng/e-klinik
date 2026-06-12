@@ -9,10 +9,14 @@ class QueueResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $registration = $this->registration;
+
         return [
             'id' => $this->id,
             'queue_number' => $this->queue_number,
+            'queue_sequence' => $this->queue_sequence,
             'queue_date' => $this->queue_date?->format('Y-m-d'),
+            'source' => $this->source,
             'status' => $this->status,
             'status_label' => match ($this->status) {
                 'waiting' => 'Menunggu',
@@ -22,21 +26,18 @@ class QueueResource extends JsonResource
                 'cancelled' => 'Dibatalkan',
                 default => $this->status,
             },
-            'service_type' => $this->service_type,
-            'estimated_wait_time' => $this->estimated_wait_time,
             'check_in_at' => $this->check_in_at?->format('Y-m-d H:i:s'),
-            'called_at' => $this->called_at?->format('Y-m-d H:i:s'),
-            'completed_at' => $this->completed_at?->format('Y-m-d H:i:s'),
-            'notes' => $this->notes,
-            'patient' => $this->whenLoaded('patient', function () {
-                return [
-                    'id' => $this->patient->id,
-                    'no_rm' => $this->patient->no_rm,
-                    'nik' => $this->patient->nik,
-                    'name' => $this->patient->name,
-                    'gender' => $this->patient->gender,
-                    'phone' => $this->patient->phone,
-                ];
+            'confirmed_at' => $this->confirmed_at?->format('Y-m-d H:i:s'),
+            'patient' => $this->when($registration, function () use ($registration) {
+                $patient = $registration->patient;
+                return $patient ? [
+                    'id' => $patient->id,
+                    'no_rm' => $patient->no_rm,
+                    'nik' => $patient->nik,
+                    'name' => $patient->name,
+                    'gender' => $patient->gender,
+                    'phone' => $patient->phone,
+                ] : null;
             }),
             'polyclinic' => $this->whenLoaded('polyclinic', function () {
                 return [
@@ -45,12 +46,22 @@ class QueueResource extends JsonResource
                     'name' => $this->polyclinic->name,
                 ];
             }),
-            'doctor' => $this->whenLoaded('doctor', function () {
+            'doctor' => $this->when($registration, function () use ($registration) {
+                $doctor = $registration->doctor;
+                return $doctor ? [
+                    'id' => $doctor->id,
+                    'code' => $doctor->code,
+                    'name' => $doctor->name,
+                    'specialist' => $doctor->specialist,
+                ] : null;
+            }),
+            'registration' => $this->when($registration, function () use ($registration) {
                 return [
-                    'id' => $this->doctor->id,
-                    'code' => $this->doctor->code,
-                    'name' => $this->doctor->name,
-                    'specialist' => $this->doctor->specialist,
+                    'id' => $registration->id,
+                    'registration_number' => $registration->registration_number,
+                    'age_text' => $registration->age_text,
+                    'service_status' => $registration->service_status,
+                    'no_sep' => $registration->no_sep,
                 ];
             }),
             'medical_record' => $this->whenLoaded('medicalRecord', function () {
@@ -60,7 +71,7 @@ class QueueResource extends JsonResource
                     'visit_date' => $this->medicalRecord->visit_date?->format('Y-m-d'),
                 ];
             }),
-            'bpjs_antrian_id' => $this->bpjs_antrian_id,
+            'bpjs_antrian_id' => $registration?->bpjs_antrian_id,
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
         ];

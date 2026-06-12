@@ -4,10 +4,7 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="mb-0">Antrean</h4>
-        <div class="d-flex gap-2">
-            <a href="{{ route('queues.display') }}" class="btn btn-info" target="_blank">Display Antrean</a>
-            <a href="{{ route('queues.create') }}" class="btn btn-primary">+ Tambah Antrean</a>
-        </div>
+        <a href="{{ route('queues.display') }}" class="btn btn-info" target="_blank">Display Antrean</a>
     </div>
 
     @include('components.alert')
@@ -58,19 +55,24 @@
                         <th>Pasien</th>
                         <th>Poliklinik</th>
                         <th>Dokter</th>
-                        <th>Jenis Layanan</th>
+                        <th>Sumber</th>
                         <th>Status</th>
                         <th width="200">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($queues as $queue)
+                        @php $reg = $queue->registration; @endphp
                         <tr>
                             <td><strong>{{ $queue->queue_number }}</strong></td>
-                            <td>{{ $queue->patient->name ?? '-' }}</td>
-                            <td>{{ $queue->polyclinic->name ?? '-' }}</td>
-                            <td>{{ $queue->doctor->name ?? '-' }}</td>
-                            <td>{{ $queue->service_type ?? '-' }}</td>
+                            <td>{{ $reg?->patient?->name ?? '-' }}</td>
+                            <td>{{ $queue->polyclinic?->name ?? '-' }}</td>
+                            <td>{{ $reg?->doctor?->name ?? '-' }}</td>
+                            <td>
+                                <span class="badge bg-{{ $queue->source == 'mjkn' ? 'primary' : 'secondary' }}">
+                                    {{ $queue->source }}
+                                </span>
+                            </td>
                             <td>
                                 @php
                                     $statusBadge = match($queue->status) {
@@ -93,13 +95,13 @@
                                 <span class="badge {{ $statusBadge }}">{{ $statusLabel }}</span>
                             </td>
                             <td>
-                                @if($queue->status == 'waiting')
-                                    <form action="{{ route('queues.call', $queue) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        <button class="btn btn-sm btn-info">Panggil</button>
-                                    </form>
-                                @endif
                                 @if(in_array($queue->status, ['waiting', 'called']))
+                                    @if($queue->status == 'waiting')
+                                        <form action="{{ route('queues.call', $queue) }}" method="POST" class="d-inline">
+                                            @csrf
+                                            <button class="btn btn-sm btn-info">Panggil</button>
+                                        </form>
+                                    @endif
                                     <form action="{{ route('queues.in-progress', $queue) }}" method="POST" class="d-inline">
                                         @csrf
                                         <button class="btn btn-sm btn-primary">Proses</button>

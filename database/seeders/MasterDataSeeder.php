@@ -83,7 +83,18 @@ class MasterDataSeeder extends Seeder
             ]
         )->assignRole('nurse');
 
-        $this->command->info("Users: admin/dokter/apoteker/laboran/kasir/perawat @e-klinik.com");
+        User::firstOrCreate(
+            ['email' => 'receptionist@e-klinik.com'],
+            [
+                'name' => 'Resepsionis Rudi',
+                'password' => Hash::make('receptionist123'),
+                'phone' => '081234567898',
+                'is_active' => true,
+                'email_verified_at' => now(),
+            ]
+        )->assignRole('receptionist');
+
+        $this->command->info("Users: admin/dokter/apoteker/laboran/kasir/perawat/resepsionis @e-klinik.com");
 
         $poliData = [
             ['code' => 'UMU', 'name' => 'Poli Umum', 'location' => 'Lantai 1'],

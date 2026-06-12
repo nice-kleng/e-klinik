@@ -13,20 +13,17 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Queue extends Model
 {
     use HasCreatedBy, Filterable, HasFactory;
+
     protected $fillable = [
-        'patient_id',
+        'registration_id',
         'polyclinic_id',
-        'doctor_id',
+        'queue_sequence',
         'queue_number',
         'queue_date',
+        'source',
         'status',
-        'estimated_wait_time',
         'check_in_at',
-        'called_at',
-        'completed_at',
-        'service_type',
-        'bpjs_antrian_id',
-        'notes',
+        'confirmed_at',
         'created_by',
     ];
 
@@ -35,24 +32,34 @@ class Queue extends Model
         return [
             'queue_date' => 'date',
             'check_in_at' => 'datetime',
-            'called_at' => 'datetime',
-            'completed_at' => 'datetime',
+            'confirmed_at' => 'datetime',
         ];
+    }
+
+    public function registration(): BelongsTo
+    {
+        return $this->belongsTo(Registration::class, 'registration_id');
     }
 
     public function patient(): BelongsTo
     {
-        return $this->belongsTo(Patient::class, 'patient_id');
+        return $this->belongsTo(Patient::class, 'registration_id', 'id')
+            ->whereRaw('1 = 0'); // fallback — use registration()->patient() instead
+    }
+
+    public function getPatientNameAttribute(): ?string
+    {
+        return $this->registration?->patient?->name;
+    }
+
+    public function getDoctorNameAttribute(): ?string
+    {
+        return $this->registration?->doctor?->name;
     }
 
     public function polyclinic(): BelongsTo
     {
         return $this->belongsTo(Polyclinic::class, 'polyclinic_id');
-    }
-
-    public function doctor(): BelongsTo
-    {
-        return $this->belongsTo(Doctor::class, 'doctor_id');
     }
 
     public function creator(): BelongsTo
@@ -65,13 +72,13 @@ class Queue extends Model
         return $this->hasOne(MedicalRecord::class, 'queue_id');
     }
 
-    public function bpjsSep(): HasOne
+    public function queueCalls(): HasMany
     {
-        return $this->hasOne(BpjsSep::class, 'queue_id');
+        return $this->hasMany(QueueCall::class, 'queue_id');
     }
 
-    public function bpjsAntrean(): HasMany
+    public function queueMilestones(): HasMany
     {
-        return $this->hasMany(BpjsAntrean::class, 'queue_id');
+        return $this->hasMany(QueueMilestone::class, 'queue_id');
     }
 }

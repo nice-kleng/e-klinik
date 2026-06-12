@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class MedicalRecord extends Model
@@ -16,6 +15,7 @@ class MedicalRecord extends Model
     use HasCreatedBy, HasFactory, SoftDeletes, Filterable;
 
     protected $fillable = [
+        'registration_id',
         'patient_id',
         'doctor_id',
         'polyclinic_id',
@@ -44,6 +44,11 @@ class MedicalRecord extends Model
             'vital_signs' => 'array',
             'follow_up_date' => 'date',
         ];
+    }
+
+    public function registration(): BelongsTo
+    {
+        return $this->belongsTo(Registration::class, 'registration_id');
     }
 
     public function patient(): BelongsTo

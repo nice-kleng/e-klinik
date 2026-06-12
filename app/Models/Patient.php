@@ -38,7 +38,11 @@ class Patient extends Model
         'phone',
         'email',
         'occupation',
+        'education',
         'marriage_status',
+        'mother_name',
+        'emergency_contact',
+        'allergy',
         'religion',
         'insurance_type',
         'insurance_number',
@@ -58,9 +62,14 @@ class Patient extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(Registration::class, 'patient_id');
+    }
+
     public function queues(): HasMany
     {
-        return $this->hasMany(Queue::class, 'patient_id');
+        return $this->hasMany(Queue::class, 'registration_id');
     }
 
     public function medicalRecords(): HasMany

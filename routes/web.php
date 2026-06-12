@@ -26,23 +26,28 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Registration (Pendaftaran) — admin, cashier
-    Route::prefix('registration')->name('registration.')->middleware('role:admin|cashier')->group(function () {
+    // Registration (Pendaftaran) — admin, receptionist
+    Route::prefix('registration')->name('registration.')->middleware('role:admin|receptionist')->group(function () {
         Route::get('/', [RegistrationController::class, 'index'])->name('index');
         Route::get('/search', [RegistrationController::class, 'searchPatient'])->name('search');
         Route::post('/', [RegistrationController::class, 'store'])->name('store');
+        Route::post('/checkin/{bpjsAntrean}', [RegistrationController::class, 'checkin'])->name('checkin');
+        Route::get('/ticket/{queue}', [RegistrationController::class, 'printTicket'])->name('ticket');
     });
 
-    // Patients — admin, doctor, cashier
+    // Patients — admin, doctor, receptionist
     Route::resource('patients', PatientController::class)
         ->except(['destroy'])
-        ->middleware('role:admin|doctor|cashier');
+        ->middleware('role:admin|doctor|receptionist');
+    Route::get('patients/{patient}/print-card', [PatientController::class, 'printCard'])
+        ->name('patients.print-card')
+        ->middleware('role:admin|receptionist');
     Route::delete('patients/{patient}', [PatientController::class, 'destroy'])
         ->name('patients.destroy')
         ->middleware('role:admin');
 
-    // Queues — admin, doctor, cashier
-    Route::prefix('queues')->name('queues.')->middleware('role:admin|doctor|cashier')->group(function () {
+    // Queues — admin, doctor, receptionist
+    Route::prefix('queues')->name('queues.')->middleware('role:admin|doctor|receptionist')->group(function () {
         Route::get('/', [QueueController::class, 'index'])->name('index');
         Route::get('/create', [QueueController::class, 'create'])->name('create');
         Route::post('/', [QueueController::class, 'store'])->name('store');
@@ -52,6 +57,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/{queue}/complete', [QueueController::class, 'complete'])->name('complete');
         Route::post('/{queue}/cancel', [QueueController::class, 'cancel'])->name('cancel');
         Route::get('/display/tv', [QueueController::class, 'display'])->name('display');
+        Route::get('/history/{registration}', [QueueController::class, 'history'])->name('history');
     });
 
     // Medical Records — admin, doctor

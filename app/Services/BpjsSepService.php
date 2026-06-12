@@ -19,9 +19,10 @@ class BpjsSepService
 
     public function createFromQueue(Queue $queue): ?BpjsSep
     {
-        $patient = $queue->patient;
+        $registration = $queue->registration;
+        $patient = $registration?->patient;
 
-        if ($patient->insurance_type !== 'BPJS') {
+        if (!$patient || $patient->insurance_type !== 'BPJS') {
             return null;
         }
 
@@ -29,6 +30,7 @@ class BpjsSepService
         if (!$bpjsPatient || !$bpjsPatient->no_kartu) {
             Log::warning('Gagal buat SEP: pasien BPJS tidak punya no kartu', [
                 'queue_id' => $queue->id,
+                'registration_id' => $registration?->id,
                 'patient_id' => $patient->id,
             ]);
             return null;
@@ -38,7 +40,7 @@ class BpjsSepService
             'noKartu' => $bpjsPatient->no_kartu,
             'tglPelayanan' => $queue->queue_date->format('Y-m-d'),
             'kodePoli' => $queue->polyclinic->code,
-            'kodeDokter' => $queue->doctor?->code ?? '',
+            'kodeDokter' => $registration?->doctor?->code ?? '',
             'diagnosa' => '',
             'catatan' => 'Dibuat otomatis saat pendaftaran antrean',
         ];
@@ -52,21 +54,25 @@ class BpjsSepService
                 $sep = BpjsSep::create([
                     'patient_id' => $patient->id,
                     'queue_id' => $queue->id,
+                    'registration_id' => $registration?->id,
                     'no_sep' => $noSep,
                     'no_kartu' => $bpjsPatient->no_kartu,
                     'tgl_pelayanan' => $queue->queue_date,
                     'kode_poli' => $queue->polyclinic->code,
-                    'kode_dokter' => $queue->doctor?->code ?? '',
+                    'kode_dokter' => $registration?->doctor?->code ?? '',
                     'diagnosa' => '',
                     'catatan' => 'Dibuat otomatis',
                     'response_raw' => $response,
                     'created_by' => auth()->id(),
                 ]);
 
-                $queue->update(['bpjs_sep_id' => $noSep]);
+                if ($registration) {
+                    $registration->update(['no_sep' => $noSep]);
+                }
 
                 Log::info('SEP berhasil dibuat otomatis dari antrean', [
                     'queue_id' => $queue->id,
+                    'registration_id' => $registration?->id,
                     'no_sep' => $noSep,
                 ]);
 

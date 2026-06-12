@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Models\Doctor;
 use App\Models\Patient;
 use App\Models\Polyclinic;
-use App\Models\Doctor;
 use App\Models\Queue;
-use App\Models\User;
+use App\Models\QueueCall;
+use App\Models\QueueMilestone;
+use App\Models\Registration;
 use App\Services\BpjsSepService;
 use App\Services\BPJS\AntrolService;
 use Carbon\Carbon;
@@ -25,8 +27,6 @@ class QueueService
     protected const STATUS_COMPLETED = 'completed';
     protected const STATUS_CANCELLED = 'cancelled';
 
-    protected const AVERAGE_CONSULTATION_MINUTES = 15;
-
     public function __construct(
         ?AntrolService $antrolService = null,
         ?BpjsSepService $bpjsSepService = null
@@ -35,51 +35,71 @@ class QueueService
         $this->bpjsSepService = $bpjsSepService ?? app(BpjsSepService::class);
     }
 
-    public function generateQueueNumber(Polyclinic $polyclinic, string $date): string
+    public function getNextSequence(Polyclinic $polyclinic, string $date): int
     {
-        $formattedDate = Carbon::parse($date)->format('Ymd');
-
-        $lastQueue = Queue::where('polyclinic_id', $polyclinic->id)
+        $last = Queue::where('polyclinic_id', $polyclinic->id)
             ->whereDate('queue_date', $date)
-            ->orderBy('id', 'desc')
+            ->orderBy('queue_sequence', 'desc')
             ->first();
 
-        if ($lastQueue && preg_match('/-(\d{3})$/', $lastQueue->queue_number, $matches)) {
-            $sequence = (int) $matches[1] + 1;
-        } else {
-            $sequence = 1;
-        }
+        return $last ? $last->queue_sequence + 1 : 1;
+    }
 
-        return sprintf('%s-%s-%03d', $polyclinic->code, $formattedDate, $sequence);
+    public function generateQueueNumber(Polyclinic $polyclinic, string $date, int $sequence): string
+    {
+        return sprintf('%s-%03d', $polyclinic->code, $sequence);
     }
 
     public function registerQueue(
         Patient $patient,
         Polyclinic $polyclinic,
         ?Doctor $doctor,
-        string $serviceType
-    ): Queue {
+        string $source,
+        ?string $bpjsAntrianId = null,
+        ?string $noSep = null,
+    ): array {
         $date = now()->toDateString();
-        $queueNumber = $this->generateQueueNumber($polyclinic, $date);
+        $sequence = $this->getNextSequence($polyclinic, $date);
+        $queueNumber = $this->generateQueueNumber($polyclinic, $date, $sequence);
 
-        $estimatedWait = $this->estimatedWaitTime($polyclinic);
+        $age = Registration::calculateAge(
+            Carbon::parse($patient->birth_date),
+            now()
+        );
 
-        $queue = Queue::create([
+        $registration = Registration::create([
+            'registration_number' => Registration::generateNumber(),
             'patient_id' => $patient->id,
             'polyclinic_id' => $polyclinic->id,
             'doctor_id' => $doctor?->id,
+            'registration_date' => $date,
+            'source' => $source,
+            'service_status' => 'registered',
+            'bpjs_antrian_id' => $bpjsAntrianId,
+            'no_sep' => $noSep,
+            'age_text' => $age['text'],
+            'age_years' => $age['years'],
+            'age_months' => $age['months'],
+            'age_days' => $age['days'],
+            'created_by' => auth()->id(),
+        ]);
+
+        $queue = Queue::create([
+            'registration_id' => $registration->id,
+            'polyclinic_id' => $polyclinic->id,
+            'queue_sequence' => $sequence,
             'queue_number' => $queueNumber,
             'queue_date' => $date,
+            'source' => $source,
             'status' => self::STATUS_WAITING,
-            'estimated_wait_time' => $estimatedWait,
             'check_in_at' => now(),
-            'service_type' => $serviceType,
+            'confirmed_at' => $source === 'mjkn' ? now() : null,
             'created_by' => auth()->id(),
         ]);
 
         if ($patient->insurance_type === 'BPJS') {
             try {
-                $this->syncToBpjs($queue);
+                $this->syncToBpjs($queue, $registration);
             } catch (\Exception $e) {
                 Log::warning('Failed to sync queue to BPJS Antrol', [
                     'queue_id' => $queue->id,
@@ -97,26 +117,34 @@ class QueueService
             }
         }
 
-        return $queue;
+        return ['registration' => $registration, 'queue' => $queue];
     }
 
-    public function callNext(string $polyclinicCode): ?Queue
+    public function callNext(Polyclinic $polyclinic): ?Queue
     {
-        $polyclinic = Polyclinic::where('code', $polyclinicCode)->firstOrFail();
-
         $queue = Queue::where('polyclinic_id', $polyclinic->id)
             ->whereDate('queue_date', now()->toDateString())
             ->where('status', self::STATUS_WAITING)
-            ->orderBy('id', 'asc')
+            ->orderBy('queue_sequence', 'asc')
             ->first();
 
         if (!$queue) {
             return null;
         }
 
+        $lastCall = QueueCall::where('queue_id', $queue->id)
+            ->max('call_sequence');
+
+        QueueCall::create([
+            'queue_id' => $queue->id,
+            'polyclinic_id' => $polyclinic->id,
+            'called_by' => auth()->id(),
+            'call_sequence' => ($lastCall ?? 0) + 1,
+            'called_at' => now(),
+        ]);
+
         $queue->update([
             'status' => self::STATUS_CALLED,
-            'called_at' => now(),
         ]);
 
         return $queue->fresh();
@@ -126,13 +154,13 @@ class QueueService
     {
         if ($queue->status !== self::STATUS_CALLED) {
             throw new \RuntimeException(
-                'Queue must be in called status before marking as in progress.'
+                'Antrean harus dalam status dipanggil sebelum masuk pemeriksaan.'
             );
         }
 
-        $queue->update([
-            'status' => self::STATUS_IN_PROGRESS,
-        ]);
+        $queue->update(['status' => self::STATUS_IN_PROGRESS]);
+
+        $queue->registration?->update(['service_status' => 'in_consultation']);
 
         return $queue->fresh();
     }
@@ -141,14 +169,13 @@ class QueueService
     {
         if (!in_array($queue->status, [self::STATUS_CALLED, self::STATUS_IN_PROGRESS])) {
             throw new \RuntimeException(
-                'Queue must be called or in progress before completing.'
+                'Antrean harus dalam status dipanggil atau diperiksa sebelum selesai.'
             );
         }
 
-        $queue->update([
-            'status' => self::STATUS_COMPLETED,
-            'completed_at' => now(),
-        ]);
+        $queue->update(['status' => self::STATUS_COMPLETED]);
+
+        $queue->registration?->update(['service_status' => 'completed']);
 
         return $queue->fresh();
     }
@@ -156,14 +183,12 @@ class QueueService
     public function cancel(Queue $queue): Queue
     {
         if (in_array($queue->status, [self::STATUS_COMPLETED, self::STATUS_CANCELLED])) {
-            throw new \RuntimeException(
-                'Queue already completed or cancelled.'
-            );
+            throw new \RuntimeException('Antrean sudah selesai atau dibatalkan.');
         }
 
-        $queue->update([
-            'status' => self::STATUS_CANCELLED,
-        ]);
+        $queue->update(['status' => self::STATUS_CANCELLED]);
+
+        $queue->registration?->update(['service_status' => 'cancelled']);
 
         try {
             $this->cancelBpjsAntrean($queue);
@@ -179,10 +204,15 @@ class QueueService
 
     public function getQueueByPolyclinic(Polyclinic $polyclinic, string $date): Collection
     {
-        return Queue::with(['patient', 'doctor', 'medicalRecord'])
+        return Queue::with([
+                'registration.patient',
+                'registration.doctor',
+                'registration.polyclinic',
+                'medicalRecord',
+            ])
             ->where('polyclinic_id', $polyclinic->id)
             ->whereDate('queue_date', $date)
-            ->orderBy('id', 'asc')
+            ->orderBy('queue_sequence', 'asc')
             ->get();
     }
 
@@ -202,6 +232,8 @@ class QueueService
                     'polyclinic_id' => $group->first()->polyclinic_id,
                     'total' => $group->count(),
                     'waiting' => $group->where('status', self::STATUS_WAITING)->count(),
+                    'called' => $group->where('status', self::STATUS_CALLED)->count(),
+                    'in_progress' => $group->where('status', self::STATUS_IN_PROGRESS)->count(),
                     'completed' => $group->where('status', self::STATUS_COMPLETED)->count(),
                 ])
                 ->values()
@@ -209,66 +241,45 @@ class QueueService
         ];
     }
 
-    public function estimatedWaitTime(Polyclinic $polyclinic): int
+    public function updateServiceStatus(Queue $queue, string $status): void
     {
-        $todayDate = now()->toDateString();
-
-        $waitingCount = Queue::where('polyclinic_id', $polyclinic->id)
-            ->whereDate('queue_date', $todayDate)
-            ->whereIn('status', [self::STATUS_WAITING, self::STATUS_CALLED])
-            ->count();
-
-        $recentCompleted = Queue::where('polyclinic_id', $polyclinic->id)
-            ->whereDate('queue_date', $todayDate)
-            ->where('status', self::STATUS_COMPLETED)
-            ->whereNotNull('completed_at')
-            ->whereNotNull('called_at')
-            ->get();
-
-        $avgMinutes = self::AVERAGE_CONSULTATION_MINUTES;
-
-        if ($recentCompleted->count() >= 3) {
-            $totalMinutes = $recentCompleted->sum(function ($q) {
-                return $q->called_at->diffInMinutes($q->completed_at);
-            });
-            $avgMinutes = max(5, (int) round($totalMinutes / $recentCompleted->count()));
+        $registration = $queue->registration;
+        if ($registration) {
+            $registration->update(['service_status' => $status]);
         }
-
-        return $waitingCount * $avgMinutes;
     }
 
-    public function syncToBpjs(Queue $queue): ?array
+    public function syncToBpjs(Queue $queue, Registration $registration): ?array
     {
-        if ($queue->patient->insurance_type !== 'BPJS') {
+        $patient = $registration->patient;
+        if (!$patient || $patient->insurance_type !== 'BPJS') {
             return null;
         }
 
-        $bpjsPatient = $queue->patient->bpjsPatient;
+        $bpjsPatient = $patient->bpjsPatient;
         if (!$bpjsPatient || !$bpjsPatient->no_kartu) {
             Log::warning('BPJS patient has no card number for queue sync', [
                 'queue_id' => $queue->id,
-                'patient_id' => $queue->patient_id,
+                'registration_id' => $registration->id,
             ]);
             return null;
         }
 
-        $polyclinicCode = $queue->polyclinic->code;
-
         $data = [
             'noKartu' => $bpjsPatient->no_kartu,
-            'nik' => $queue->patient->nik,
-            'noRm' => $queue->patient->no_rm,
-            'kodePoli' => $polyclinicCode,
-            'kodeDokter' => $queue->doctor?->code ?? '',
+            'nik' => $patient->nik,
+            'noRm' => $patient->no_rm,
+            'kodePoli' => $polyclinicCode = $registration->polyclinic?->code ?? '',
+            'kodeDokter' => $registration->doctor?->code ?? '',
             'noAntrean' => $queue->queue_number,
-            'tanggal' => $queue->queue_date->format('Y-m-d'),
+            'tanggal' => $registration->registration_date->format('Y-m-d'),
             'jamPendaftaran' => $queue->check_in_at?->format('H:i:s') ?? now()->format('H:i:s'),
         ];
 
         $response = $this->antrolService->addAntrean($data);
 
         if ($response && isset($response['noAntrean'])) {
-            $queue->update([
+            $registration->update([
                 'bpjs_antrian_id' => $response['noAntrean'] ?? null,
             ]);
         }
@@ -278,19 +289,40 @@ class QueueService
 
     protected function cancelBpjsAntrean(Queue $queue): ?array
     {
-        if (!$queue->bpjs_antrian_id) {
+        $registration = $queue->registration;
+        if (!$registration || !$registration->bpjs_antrian_id) {
             return null;
         }
 
         try {
-            return $this->antrolService->deleteAntrean($queue->bpjs_antrian_id);
+            return $this->antrolService->deleteAntrean($registration->bpjs_antrian_id);
         } catch (\Exception $e) {
             Log::error('Failed to delete BPJS antrean', [
                 'queue_id' => $queue->id,
-                'bpjs_antrian_id' => $queue->bpjs_antrian_id,
+                'bpjs_antrian_id' => $registration->bpjs_antrian_id,
                 'error' => $e->getMessage(),
             ]);
             return null;
         }
+    }
+
+    public function callBack(Queue $queue): Queue
+    {
+        $polyclinic = $queue->polyclinic;
+
+        $lastCall = QueueCall::where('queue_id', $queue->id)
+            ->max('call_sequence');
+
+        QueueCall::create([
+            'queue_id' => $queue->id,
+            'polyclinic_id' => $polyclinic->id,
+            'called_by' => auth()->id(),
+            'call_sequence' => ($lastCall ?? 0) + 1,
+            'called_at' => now(),
+        ]);
+
+        $queue->update(['status' => self::STATUS_CALLED]);
+
+        return $queue->fresh();
     }
 }

@@ -60,8 +60,8 @@ class BpjsSepController extends Controller
             ->orderBy('name')
             ->get();
 
-        $queues = Queue::with(['patient', 'polyclinic'])
-            ->whereHas('patient', fn ($q) => $q->where('insurance_type', 'BPJS'))
+        $queues = Queue::with(['registration.patient', 'polyclinic'])
+            ->whereHas('registration.patient', fn ($q) => $q->where('insurance_type', 'BPJS'))
             ->where('queue_date', now()->toDateString())
             ->orderBy('id', 'desc')
             ->get();
@@ -125,7 +125,10 @@ class BpjsSepController extends Controller
             ]);
 
             if ($validated['queue_id']) {
-                Queue::where('id', $validated['queue_id'])->update(['bpjs_sep_id' => $response['sep']['noSep']]);
+                $queue = Queue::find($validated['queue_id']);
+                if ($queue && $queue->registration) {
+                    $queue->registration->update(['no_sep' => $response['sep']['noSep']]);
+                }
             }
 
             return redirect()->route('bpjs-seps.index')
@@ -141,7 +144,7 @@ class BpjsSepController extends Controller
 
     public function show(BpjsSep $bpjsSep): View
     {
-        $bpjsSep->load(['patient', 'queue.polyclinic', 'queue.doctor', 'creator']);
+        $bpjsSep->load(['patient', 'queue.polyclinic', 'queue.registration.doctor', 'creator']);
 
         $responseDetail = null;
         try {

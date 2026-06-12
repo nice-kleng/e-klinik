@@ -67,6 +67,10 @@ class PatientController extends Controller
             'religion' => 'nullable|string|max:50',
             'insurance_type' => 'nullable|string|max:50',
             'insurance_number' => 'nullable|string|max:50',
+            'education' => 'nullable|in:SD,SMP,SMA,D1,D2,D3,S1,S2,S3',
+            'mother_name' => 'nullable|string|max:100',
+            'emergency_contact' => 'nullable|string|max:200',
+            'allergy' => 'nullable|string',
         ]);
 
         try {
@@ -122,6 +126,10 @@ class PatientController extends Controller
             'religion' => 'nullable|string|max:50',
             'insurance_type' => 'nullable|string|max:50',
             'insurance_number' => 'nullable|string|max:50',
+            'education' => 'nullable|in:SD,SMP,SMA,D1,D2,D3,S1,S2,S3',
+            'mother_name' => 'nullable|string|max:100',
+            'emergency_contact' => 'nullable|string|max:200',
+            'allergy' => 'nullable|string',
         ]);
 
         try {
@@ -136,6 +144,13 @@ class PatientController extends Controller
                 ->withInput()
                 ->with('error', 'Gagal memperbarui data pasien');
         }
+    }
+
+    public function printCard(Patient $patient)
+    {
+        $patient->load('bpjsPatient');
+
+        return view('patients.print-card', compact('patient'));
     }
 
     public function destroy(Patient $patient): RedirectResponse

@@ -24,7 +24,7 @@ class QueueController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = Queue::with(['patient', 'polyclinic', 'doctor', 'medicalRecord']);
+            $query = Queue::with(['registration.patient', 'registration.doctor', 'polyclinic', 'medicalRecord']);
 
             if ($request->filled('date')) {
                 $query->where('queue_date', $request->date);
@@ -38,7 +38,7 @@ class QueueController extends Controller
                 $query->where('status', $request->status);
             }
 
-            $queues = $query->orderBy('id', 'asc')->paginate($request->per_page ?? 20);
+            $queues = $query->orderBy('queue_sequence', 'asc')->paginate($request->per_page ?? 20);
 
             return response()->json([
                 'success' => true,
@@ -65,20 +65,18 @@ class QueueController extends Controller
                 ? \App\Models\Doctor::find($request->doctor_id)
                 : null;
 
-            $queue = $this->queueService->registerQueue(
+            $result = $this->queueService->registerQueue(
                 $patient,
                 $polyclinic,
                 $doctor,
-                $request->service_type
+                $request->source ?? 'walk_in',
+                null,
+                null,
             );
-
-            if ($request->filled('notes')) {
-                $queue->update(['notes' => $request->notes]);
-            }
 
             return response()->json([
                 'success' => true,
-                'data' => new QueueResource($queue->load(['patient', 'polyclinic', 'doctor'])),
+                'data' => new QueueResource($result['queue']->load(['registration.patient', 'registration.doctor', 'polyclinic'])),
                 'message' => 'Pendaftaran antrean berhasil',
             ], 201);
         } catch (\Exception $e) {
@@ -95,7 +93,7 @@ class QueueController extends Controller
     public function show(Queue $queue): JsonResponse
     {
         try {
-            $queue->load(['patient', 'polyclinic', 'doctor', 'medicalRecord']);
+            $queue->load(['registration.patient', 'registration.doctor', 'polyclinic', 'medicalRecord']);
 
             return response()->json([
                 'success' => true,
@@ -118,7 +116,8 @@ class QueueController extends Controller
         try {
             $request->validate(['polyclinic_code' => 'required|string|exists:polyclinics,code']);
 
-            $queue = $this->queueService->callNext($request->polyclinic_code);
+            $polyclinic = Polyclinic::where('code', $request->polyclinic_code)->firstOrFail();
+            $queue = $this->queueService->callNext($polyclinic);
 
             if (!$queue) {
                 return response()->json([
@@ -129,7 +128,7 @@ class QueueController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => new QueueResource($queue->load(['patient', 'polyclinic', 'doctor'])),
+                'data' => new QueueResource($queue->load(['registration.patient', 'registration.doctor', 'polyclinic'])),
                 'message' => 'Pasien dipanggil',
             ]);
         } catch (\Exception $e) {
@@ -150,7 +149,7 @@ class QueueController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => new QueueResource($queue->load(['patient', 'polyclinic', 'doctor'])),
+                'data' => new QueueResource($queue->load(['registration.patient', 'registration.doctor', 'polyclinic'])),
                 'message' => 'Status antrean diubah menjadi dalam pemeriksaan',
             ]);
         } catch (\RuntimeException $e) {
@@ -176,7 +175,7 @@ class QueueController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => new QueueResource($queue->load(['patient', 'polyclinic', 'doctor'])),
+                'data' => new QueueResource($queue->load(['registration.patient', 'registration.doctor', 'polyclinic'])),
                 'message' => 'Antrean selesai',
             ]);
         } catch (\RuntimeException $e) {
@@ -202,7 +201,7 @@ class QueueController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => new QueueResource($queue->load(['patient', 'polyclinic', 'doctor'])),
+                'data' => new QueueResource($queue->load(['registration.patient', 'registration.doctor', 'polyclinic'])),
                 'message' => 'Antrean dibatalkan',
             ]);
         } catch (\RuntimeException $e) {
@@ -233,10 +232,12 @@ class QueueController extends Controller
             $current = $queues->whereIn('status', ['called', 'in_progress'])->first();
             $waiting = $queues->where('status', 'waiting')->values();
 
+            $currentPatient = $current?->registration?->patient;
+
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'current' => $current ? new QueueResource($current->load(['patient', 'doctor'])) : null,
+                    'current' => $current ? new QueueResource($current->load(['registration.patient', 'registration.doctor'])) : null,
                     'waiting' => QueueResource::collection($waiting),
                     'total_waiting' => $waiting->count(),
                 ],
@@ -271,15 +272,15 @@ class QueueController extends Controller
                     'polyclinic' => $polyclinic->name,
                     'called' => $called ? [
                         'queue_number' => $called->queue_number,
-                        'patient_name' => $called->patient?->name,
+                        'patient_name' => $called->registration?->patient?->name,
                     ] : null,
                     'in_progress' => $inProgress ? [
                         'queue_number' => $inProgress->queue_number,
-                        'patient_name' => $inProgress->patient?->name,
+                        'patient_name' => $inProgress->registration?->patient?->name,
                     ] : null,
                     'waiting_list' => $waiting->map(fn ($q) => [
                         'queue_number' => $q->queue_number,
-                        'patient_name' => $q->patient?->name,
+                        'patient_name' => $q->registration?->patient?->name,
                     ]),
                 ],
                 'message' => 'Data tampilan antrean',
