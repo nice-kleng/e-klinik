@@ -1,1 +1,69 @@
 @import "@fortawesome/fontawesome-free/css/all.min.css";
+
+/* ── Table Styling ── */
+.card .table {
+    margin-bottom: 0;
+}
+
+.card .table thead th {
+    background-color: #1F2937;
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: none;
+    padding: 0.75rem 1rem;
+    white-space: nowrap;
+}
+
+.card .table tbody td {
+    padding: 0.65rem 1rem;
+    vertical-align: middle;
+    font-size: 0.875rem;
+}
+
+.card .table tbody tr:hover {
+    background-color: rgba(79, 70, 229, 0.04);
+}
+
+.card .table-striped > tbody > tr:nth-of-type(odd) {
+    background-color: rgba(0, 0, 0, 0.015);
+}
+
+.card .table-striped > tbody > tr:nth-of-type(odd):hover {
+    background-color: rgba(79, 70, 229, 0.07);
+}
+
+.card .table thead th:first-child {
+    border-radius: 0;
+}
+
+/* ── Pagination ── */
+.card-footer .pagination {
+    margin-bottom: 0;
+    justify-content: center;
+}
+
+.card-footer .page-link {
+    border: none;
+    color: #374151;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.85rem;
+    border-radius: 0.375rem;
+    margin: 0 0.125rem;
+}
+
+.card-footer .page-item.active .page-link {
+    background-color: #1F2937;
+    color: #fff;
+}
+
+.card-footer .page-item.disabled .page-link {
+    color: #9CA3AF;
+}
+
+/* ── Table Responsive Fix ── */
+.table-responsive {
+    border-radius: 0;
+}

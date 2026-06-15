@@ -31,6 +31,7 @@
                 <h6 class="mb-0">Hasil Pencarian: "{{ $keyword }}"</h6>
             </div>
             <div class="card-body p-0">
+                <div class="table-responsive">
                 <table class="table table-striped mb-0">
                     <thead>
                         <tr>
@@ -53,6 +54,7 @@
                         @endforelse
                     </tbody>
                 </table>
+                </div>
             </div>
             <div class="card-footer bg-white">
                 {{ $diagnoses->links() }}
