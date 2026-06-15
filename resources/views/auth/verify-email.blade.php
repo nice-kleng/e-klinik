@@ -1,4 +1,4 @@
-@extends('layouts.guest')
+@extends('layouts.volt-guest')
 
 @section('content')
     <div class="mb-4 text-muted small">

@@ -46,8 +46,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('patients.destroy')
         ->middleware('role:admin');
 
-    // Queues — admin, doctor, receptionist
-    Route::prefix('queues')->name('queues.')->middleware('role:admin|doctor|receptionist')->group(function () {
+    // Queues — admin, doctor, receptionist, nurse
+    Route::prefix('queues')->name('queues.')->middleware('role:admin|doctor|receptionist|nurse')->group(function () {
         Route::get('/', [QueueController::class, 'index'])->name('index');
         Route::get('/create', [QueueController::class, 'create'])->name('create');
         Route::post('/', [QueueController::class, 'store'])->name('store');
@@ -56,8 +56,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/{queue}/in-progress', [QueueController::class, 'inProgress'])->name('in-progress');
         Route::post('/{queue}/complete', [QueueController::class, 'complete'])->name('complete');
         Route::post('/{queue}/cancel', [QueueController::class, 'cancel'])->name('cancel');
-        Route::get('/display/tv', [QueueController::class, 'display'])->name('display');
+        Route::post('/{queue}/call-ajax', [QueueController::class, 'callAjax'])->name('call-ajax');
+        Route::get('/{queue}/data', [QueueController::class, 'queueData'])->name('data');
         Route::get('/history/{registration}', [QueueController::class, 'history'])->name('history');
+    });
+
+    Route::prefix('queues')->name('queues.')->group(function () {
+        Route::get('/display/tv', [QueueController::class, 'display'])->name('display');
+        Route::get('/display/tv/{polyclinic}', [QueueController::class, 'displayTv'])->name('display-tv');
+        Route::get('/display-json', [QueueController::class, 'displayJson'])->name('display-json');
+        Route::get('/display-json/{polyclinic}', [QueueController::class, 'displayJsonPoly'])->name('display-json-poly');
     });
 
     // Medical Records — admin, doctor

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.volt')
 
 @section('content')
 <div class="container-fluid">
@@ -21,7 +21,7 @@
                             <h3 class="mb-0 mt-1">{{ $totalPatientsToday ?? 0 }}</h3>
                         </div>
                         <div class="bg-primary bg-opacity-10 p-3 rounded">
-                            <span class="text-primary fs-4">👤</span>
+                            <span class="text-primary fs-4">ðŸ‘¤</span>
                         </div>
                     </div>
                     <small class="text-muted">Hari ini</small>
@@ -37,7 +37,7 @@
                             <h3 class="mb-0 mt-1">{{ $queueStats['waiting'] ?? 0 }}</h3>
                         </div>
                         <div class="bg-warning bg-opacity-10 p-3 rounded">
-                            <span class="text-warning fs-4">⏳</span>
+                            <span class="text-warning fs-4">â³</span>
                         </div>
                     </div>
                     <small class="text-muted">Menunggu</small>
@@ -53,7 +53,7 @@
                             <h3 class="mb-0 mt-1">{{ $queueStats['completed'] ?? 0 }}</h3>
                         </div>
                         <div class="bg-success bg-opacity-10 p-3 rounded">
-                            <span class="text-success fs-4">✅</span>
+                            <span class="text-success fs-4">âœ…</span>
                         </div>
                     </div>
                     <small class="text-muted">Hari ini</small>
@@ -69,7 +69,7 @@
                             <h3 class="mb-0 mt-1">{{ \App\Models\Doctor::where('is_active', true)->count() }}</h3>
                         </div>
                         <div class="bg-info bg-opacity-10 p-3 rounded">
-                            <span class="text-info fs-4">👨‍⚕️</span>
+                            <span class="text-info fs-4">ðŸ‘¨â€âš•ï¸</span>
                         </div>
                     </div>
                     <small class="text-muted">Aktif</small>

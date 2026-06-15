@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.volt')
 
 @section('content')
 <div class="container-fluid">
@@ -11,7 +11,7 @@
 
     <div class="card border-0 shadow-sm mb-3">
         <div class="card-header bg-white fw-semibold">
-            {{ $labResult->patient->name ?? '-' }} ({{ $labResult->patient->no_rm ?? '-' }}) —
+            {{ $labResult->patient->name ?? '-' }} ({{ $labResult->patient->no_rm ?? '-' }}) â€”
             {{ $labResult->labTest->name ?? '-' }}
         </div>
         <div class="card-body">

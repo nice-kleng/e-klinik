@@ -1,4 +1,4 @@
-@extends('layouts.guest')
+@extends('layouts.volt-guest')
 
 @section('content')
     <form method="POST" action="{{ route('password.store') }}">

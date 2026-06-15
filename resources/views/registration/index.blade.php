@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.volt')
 
 @section('header', 'Pendaftaran Pasien')
 
@@ -59,7 +59,7 @@
         </ul>
 
         <div class="tab-content">
-            {{-- ═══════════════ TAB 1: PENDAFTARAN BARU ═══════════════ --}}
+            {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• TAB 1: PENDAFTARAN BARU â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
             <div class="tab-pane fade show active" id="panel-register" role="tabpanel">
                 {{-- Progress Stepper --}}
                 <div class="card border-0 shadow-sm mb-4">
@@ -87,7 +87,7 @@
                     <input type="hidden" name="source" id="source" value="walk_in">
 
                     <div class="row g-4">
-                        {{-- {{── LEFT COLUMN — Search / MJKN / New Patient ──}} --}}
+                        {{-- {{â”€â”€ LEFT COLUMN â€” Search / MJKN / New Patient â”€â”€}} --}}
                         <div class="col-lg-7">
                             {{-- MJKN Online Panel --}}
                             <div class="card border-0 shadow-sm mb-4 border-start border-primary border-4">
@@ -199,96 +199,101 @@
                                     </div>
                                 </div>
                             </div>
-
-                            {{-- Walk-in: New Patient Form --}}
-                            <div id="newPatientSection" class="card border-0 shadow-sm mb-4 d-none">
-                                <div class="card-header bg-white py-2">
-                                    <h6 class="mb-0"><i class="bi bi-person-vcard me-1"></i> Data Pasien Baru</h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-md-4">
-                                            <label class="form-label small fw-medium">NIK <span
-                                                    class="text-danger">*</span></label>
-                                            <input type="text" name="nik" id="nik" class="form-control"
-                                                maxlength="16" placeholder="16 digit NIK">
+                            {{-- Walk-in: New Patient Modal --}}
+                            <div class="modal fade" id="newPatientModal" tabindex="-1" data-bs-backdrop="static">
+                                <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title"><i class="bi bi-person-vcard me-1"></i> Data Pasien Baru</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                         </div>
-                                        <div class="col-md-5">
-                                            <label class="form-label small fw-medium">Nama Lengkap <span
-                                                    class="text-danger">*</span></label>
-                                            <input type="text" name="name" id="name" class="form-control"
-                                                placeholder="Nama sesuai KTP">
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label class="form-label small fw-medium">Tgl Lahir <span
-                                                    class="text-danger">*</span></label>
-                                            <input type="date" name="birth_date" id="birth_date"
-                                                class="form-control">
-                                        </div>
-                                        <div class="col-md-2">
-                                            <label class="form-label small fw-medium">JK <span
-                                                    class="text-danger">*</span></label>
-                                            <div class="d-flex gap-2 mt-1">
-                                                <div class="form-check form-check-inline">
-                                                    <input class="form-check-input" type="radio" name="gender"
-                                                        value="L" id="genderL">
-                                                    <label class="form-check-label small" for="genderL">L</label>
+                                        <div class="modal-body">
+                                            <div class="row g-3">
+                                                <div class="col-md-4">
+                                                    <label class="form-label small fw-medium">NIK <span class="text-danger">*</span></label>
+                                                    <input type="text" name="nik" id="nik" class="form-control" maxlength="16" placeholder="16 digit NIK">
                                                 </div>
-                                                <div class="form-check form-check-inline">
-                                                    <input class="form-check-input" type="radio" name="gender"
-                                                        value="P" id="genderP">
-                                                    <label class="form-check-label small" for="genderP">P</label>
+                                                <div class="col-md-5">
+                                                    <label class="form-label small fw-medium">Nama Lengkap <span class="text-danger">*</span></label>
+                                                    <input type="text" name="name" id="name" class="form-control" placeholder="Nama sesuai KTP">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label small fw-medium">Tgl Lahir <span class="text-danger">*</span></label>
+                                                    <input type="date" name="birth_date" id="birth_date" class="form-control">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label small fw-medium">JK <span class="text-danger">*</span></label>
+                                                    <div class="d-flex gap-2 mt-1">
+                                                        <div class="form-check form-check-inline">
+                                                            <input class="form-check-input" type="radio" name="gender" value="L" id="genderL">
+                                                            <label class="form-check-label small" for="genderL">L</label>
+                                                        </div>
+                                                        <div class="form-check form-check-inline">
+                                                            <input class="form-check-input" type="radio" name="gender" value="P" id="genderP">
+                                                            <label class="form-check-label small" for="genderP">P</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label small fw-medium">Tempat Lahir</label>
+                                                    <input type="text" name="birth_place" class="form-control">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label small fw-medium">Telepon</label>
+                                                    <input type="text" name="phone" class="form-control" placeholder="08xxx">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label small fw-medium">Alamat</label>
+                                                    <input type="text" name="address" class="form-control" placeholder="Alamat lengkap">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label small fw-medium">RT</label>
+                                                    <input type="text" name="rt" class="form-control" placeholder="RT">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label small fw-medium">RW</label>
+                                                    <input type="text" name="rw" class="form-control" placeholder="RW">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label small fw-medium">Kelurahan</label>
+                                                    <input type="text" name="village" class="form-control" placeholder="Kelurahan">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label small fw-medium">Kecamatan</label>
+                                                    <input type="text" name="district" class="form-control" placeholder="Kecamatan">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label small fw-medium">Kota</label>
+                                                    <input type="text" name="city" class="form-control" placeholder="Kota">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label small fw-medium">Provinsi</label>
+                                                    <input type="text" name="province" class="form-control" placeholder="Provinsi">
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label class="form-label small fw-medium">Tempat Lahir</label>
-                                            <input type="text" name="birth_place" class="form-control">
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label class="form-label small fw-medium">Telepon</label>
-                                            <input type="text" name="phone" class="form-control"
-                                                placeholder="08xxx">
-                                        </div>
-                                        <div class="col-md-4">
-                                            <label class="form-label small fw-medium">Alamat</label>
-                                            <input type="text" name="address" class="form-control"
-                                                placeholder="Alamat lengkap">
-                                        </div>
-                                    </div>
-
-                                    {{-- Collapsible Social Data --}}
-                                    <div class="mt-3">
-                                        <button type="button" class="btn btn-sm btn-outline-secondary"
-                                            data-bs-toggle="collapse" data-bs-target="#socialData">
-                                            <i class="bi bi-chevron-down me-1"></i> Data Sosial
-                                        </button>
-                                        <div class="collapse mt-2" id="socialData">
+                                            <hr>
+                                            <h6 class="mb-3">Data Sosial</h6>
                                             <div class="row g-3">
                                                 <div class="col-md-3">
                                                     <label class="form-label small fw-medium">Pekerjaan</label>
-                                                    <input type="text" name="occupation"
-                                                        class="form-control form-control-sm">
+                                                    <input type="text" name="occupation" class="form-control">
                                                 </div>
                                                 <div class="col-md-3">
                                                     <label class="form-label small fw-medium">Pendidikan</label>
-                                                    <select name="education" class="form-select form-select-sm">
+                                                    <select name="education" class="form-select">
                                                         <option value="">-</option>
                                                         @foreach (['SD', 'SMP', 'SMA', 'D1', 'D2', 'D3', 'S1', 'S2', 'S3'] as $e)
-                                                            <option value="{{ $e }}">{{ $e }}
-                                                            </option>
+                                                            <option value="{{ $e }}">{{ $e }}</option>
                                                         @endforeach
                                                     </select>
                                                 </div>
                                                 <div class="col-md-3">
                                                     <label class="form-label small fw-medium">Agama</label>
-                                                    <input type="text" name="religion"
-                                                        class="form-control form-control-sm"
-                                                        placeholder="Islam/Kristen/dll">
+                                                    <input type="text" name="religion" class="form-control" placeholder="Islam/Kristen/dll">
                                                 </div>
                                                 <div class="col-md-3">
                                                     <label class="form-label small fw-medium">Status Nikah</label>
-                                                    <select name="marriage_status" class="form-select form-select-sm">
+                                                    <select name="marriage_status" class="form-select">
                                                         <option value="">-</option>
                                                         <option value="Belum Kawin">Belum Kawin</option>
                                                         <option value="Kawin">Kawin</option>
@@ -297,37 +302,39 @@
                                                 </div>
                                                 <div class="col-md-4">
                                                     <label class="form-label small fw-medium">Nama Ibu</label>
-                                                    <input type="text" name="mother_name"
-                                                        class="form-control form-control-sm">
+                                                    <input type="text" name="mother_name" class="form-control">
                                                 </div>
                                                 <div class="col-md-4">
                                                     <label class="form-label small fw-medium">Kontak Darurat</label>
-                                                    <input type="text" name="emergency_contact"
-                                                        class="form-control form-control-sm" placeholder="Nama & No">
+                                                    <input type="text" name="emergency_contact" class="form-control" placeholder="Nama & No">
                                                 </div>
                                                 <div class="col-md-4">
                                                     <label class="form-label small fw-medium">Alergi</label>
-                                                    <input type="text" name="allergy"
-                                                        class="form-control form-control-sm" placeholder="Obat/makanan">
+                                                    <input type="text" name="allergy" class="form-control" placeholder="Obat/makanan">
                                                 </div>
                                                 <div class="col-md-3">
                                                     <label class="form-label small fw-medium">Gol Darah</label>
-                                                    <select name="blood_type" class="form-select form-select-sm">
+                                                    <select name="blood_type" class="form-select">
                                                         <option value="">-</option>
                                                         @foreach (['A', 'B', 'AB', 'O'] as $bt)
-                                                            <option value="{{ $bt }}">{{ $bt }}
-                                                            </option>
+                                                            <option value="{{ $bt }}">{{ $bt }}</option>
                                                         @endforeach
                                                     </select>
                                                 </div>
                                             </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                                            <button type="button" class="btn btn-primary" id="btnSaveNewPatient">
+                                                <i class="bi bi-check-lg"></i> Simpan & Pilih
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {{-- {{── RIGHT COLUMN — Registration Form ──}} --}}
+                        {{-- {{â”€â”€ RIGHT COLUMN â€” Registration Form â”€â”€}} --}}
                         <div class="col-lg-5">
                             <div class="card border-0 shadow-sm mb-4 border-start border-success border-4"
                                 id="regInfoCard">
@@ -341,9 +348,9 @@
                                                 class="text-danger">*</span></label>
                                         <select name="insurance_type" id="insurance_type" class="form-select" required>
                                             <option value="">-- Pilih --</option>
-                                            <option value="Umum">🏷️ Umum</option>
-                                            <option value="BPJS">🆔 BPJS</option>
-                                            <option value="Asuransi Lain">📋 Asuransi Lain</option>
+                                            <option value="Umum">ðŸ·ï¸ Umum</option>
+                                            <option value="BPJS">ðŸ†” BPJS</option>
+                                            <option value="Asuransi Lain">ðŸ“‹ Asuransi Lain</option>
                                         </select>
                                     </div>
                                     <div class="mb-3 d-none" id="insuranceNumberGroup">
@@ -385,7 +392,7 @@
                                         <textarea name="notes" class="form-control" rows="2" placeholder="Keluhan awal atau catatan lain"></textarea>
                                     </div>
 
-                                    {{-- {{── Estimated Queue Info ──}} --}}
+                                    {{-- {{â”€â”€ Estimated Queue Info â”€â”€}} --}}
                                     <div id="queuePreview" class="d-none p-3 bg-light rounded-3 mb-3">
                                         <small class="text-muted d-block">
                                             <i class="bi bi-info-circle me-1"></i>
@@ -404,7 +411,7 @@
                 </form>
             </div>
 
-            {{-- ═══════════════ TAB 2: ANTREAN HARI INI ═══════════════ --}}
+            {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• TAB 2: ANTREAN HARI INI â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
             <div class="tab-pane fade" id="panel-queues" role="tabpanel">
                 <div class="card border-0 shadow-sm mb-3">
                     <div class="card-body py-2">
@@ -492,15 +499,16 @@
                                                 class="badge bg-{{ $map[$q->status] ?? 'secondary' }} status-badge">{{ $label[$q->status] ?? $q->status }}</span>
                                         </td>
                                         <td class="text-center">
+                                            @php $isReceptionist = auth()->user()->hasRole('receptionist'); @endphp
                                             @if ($q->status == 'waiting')
                                                 <form action="{{ route('queues.call', $q) }}" method="POST"
-                                                    class="d-inline">
+                                                    class="d-inline" data-call>
                                                     @csrf
                                                     <button class="btn btn-sm btn-outline-info"><i
                                                             class="bi bi-megaphone"></i></button>
                                                 </form>
                                             @endif
-                                            @if (in_array($q->status, ['waiting', 'called']))
+                                            @if (in_array($q->status, ['waiting', 'called']) && !$isReceptionist)
                                                 <form action="{{ route('queues.in-progress', $q) }}" method="POST"
                                                     class="d-inline">
                                                     @csrf
@@ -508,7 +516,7 @@
                                                             class="bi bi-play-fill"></i></button>
                                                 </form>
                                             @endif
-                                            @if (in_array($q->status, ['called', 'in_progress']))
+                                            @if (in_array($q->status, ['called', 'in_progress']) && !$isReceptionist)
                                                 <form action="{{ route('queues.complete', $q) }}" method="POST"
                                                     class="d-inline">
                                                     @csrf
@@ -542,7 +550,7 @@
                 </div>
             </div>
 
-            {{-- ═══════════════ TAB 3: RIWAYAT PENDAFTARAN ═══════════════ --}}
+            {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• TAB 3: RIWAYAT PENDAFTARAN â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
             <div class="tab-pane fade" id="panel-history" role="tabpanel">
                 <div class="card border-0 shadow-sm mb-3">
                     <div class="card-body py-2">
@@ -691,9 +699,10 @@
 
 @push('scripts')
     <script>
-        // ═══════════════════════════════════════════════════════════════
+        document.addEventListener('DOMContentLoaded', function () {
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // TOAST NOTIFICATION
-        // ═══════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         function showToast(message, type = 'success') {
             const tpl = document.getElementById('toastTemplate');
             const clone = tpl.content.cloneNode(true);
@@ -717,9 +726,9 @@
             if (window.flash?.[t]) showToast(window.flash[t], t);
         });
 
-        // ═══════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // STEPPER
-        // ═══════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         function updateStep() {
             const pid = document.getElementById('patient_id').value;
             const poly = document.getElementById('polyclinic_id').value;
@@ -728,7 +737,7 @@
             const s3 = document.getElementById('step3');
             if (pid || document.getElementById('nik').value) {
                 s1.classList.add('done');
-                s1.textContent = '✓';
+                s1.textContent = 'âœ“';
             } else {
                 s1.classList.remove('done');
                 s1.textContent = '1';
@@ -750,22 +759,22 @@
             el.addEventListener('change', updateStep);
         });
 
-        // ═══════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // SEARCH PATIENT
-        // ═══════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         const searchInput = document.getElementById('searchKeyword');
         const btnSearch = document.getElementById('btnSearch');
         const searchStatus = document.getElementById('searchStatus');
         const searchResults = document.getElementById('searchResults');
         const selectedCard = document.getElementById('selectedPatientCard');
-        const newSection = document.getElementById('newPatientSection');
+        const newPatientModal = new bootstrap.Modal(document.getElementById('newPatientModal'));
 
         function getInitials(name) {
             if (!name) return '?';
             return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
         }
 
-        function selectPatient(data) {
+        window.selectPatient = function(data) {
             document.getElementById('patient_id').value = data.id;
             document.getElementById('source').value = data.insurance_type === 'BPJS' ? 'walk_in' : 'walk_in';
             document.getElementById('avatarInitial').textContent = getInitials(data.name);
@@ -776,7 +785,6 @@
             badge.textContent = data.insurance_type;
             badge.className = 'badge ' + (data.insurance_type === 'BPJS' ? 'bg-success' : 'bg-info');
             selectedCard.classList.remove('d-none');
-            newSection.classList.add('d-none');
             searchResults.classList.add('d-none');
             searchStatus.textContent = '';
             document.getElementById('btnSubmit').disabled = false;
@@ -786,9 +794,6 @@
                 document.getElementById('insuranceNumberGroup').classList.remove('d-none');
                 document.querySelector('input[name="insurance_number"]').value = data.insurance_number;
             }
-
-            document.querySelectorAll('#newPatientSection input, #newPatientSection select').forEach(el => el.disabled =
-                true);
             updateStep();
         }
 
@@ -796,8 +801,6 @@
             document.getElementById('patient_id').value = '';
             selectedCard.classList.add('d-none');
             document.getElementById('btnSubmit').disabled = true;
-            document.querySelectorAll('#newPatientSection input, #newPatientSection select').forEach(el => el
-                .disabled = false);
             searchInput.value = '';
             searchInput.focus();
             updateStep();
@@ -832,7 +835,7 @@
                         style="width:40px;height:40px;font-weight:600;font-size:0.9rem">${getInitials(p.name)}</div>
                     <div class="flex-grow-1">
                         <strong class="d-block small">${p.name}</strong>
-                        <small class="text-muted">RM ${p.no_rm} • ${p.nik} • <span class="badge bg-${p.insurance_type === 'BPJS' ? 'success' : 'info'}">${p.insurance_type}</span></small>
+                        <small class="text-muted">RM ${p.no_rm} â€¢ ${p.nik} â€¢ <span class="badge bg-${p.insurance_type === 'BPJS' ? 'success' : 'info'}">${p.insurance_type}</span></small>
                     </div>
                 </a>
             `).join('');
@@ -855,28 +858,52 @@
         document.getElementById('btnNewForm').addEventListener('click', function() {
             selectedCard.classList.add('d-none');
             searchResults.classList.add('d-none');
-            newSection.classList.toggle('d-none');
-            document.querySelectorAll('#newPatientSection input, #newPatientSection select').forEach(el => el
-                .disabled = newSection.classList.contains('d-none'));
-            if (!newSection.classList.contains('d-none')) {
-                document.getElementById('nik').focus();
-                document.getElementById('patient_id').value = '';
-                document.getElementById('btnSubmit').disabled = true;
-                updateStep();
-            }
+            document.getElementById('patient_id').value = '';
+            document.getElementById('btnSubmit').disabled = true;
+            document.getElementById('newPatientModal').querySelector('form')?.reset();
+            document.querySelectorAll('#newPatientModal input, #newPatientModal select').forEach(el => el.value = '');
+            document.querySelectorAll('#newPatientModal input[type="radio"]').forEach(el => el.checked = false);
+            newPatientModal.show();
+            setTimeout(() => document.getElementById('nik').focus(), 300);
         });
 
-        // ═══════════════════════════════════════════════════════════════
+        document.getElementById('btnSaveNewPatient').addEventListener('click', function() {
+            const nik = document.getElementById('nik').value.trim();
+            const name = document.getElementById('name').value.trim();
+            const birth_date = document.getElementById('birth_date').value;
+            const gender = document.querySelector('input[name="gender"]:checked');
+
+            if (nik.length !== 16) { alert('NIK harus 16 digit'); return; }
+            if (!name) { alert('Nama harus diisi'); return; }
+            if (!birth_date) { alert('Tanggal lahir harus diisi'); return; }
+            if (!gender) { alert('Jenis kelamin harus dipilih'); return; }
+
+            selectPatient({
+                id: null,
+                no_rm: 'Baru',
+                name: name,
+                nik: nik,
+                insurance_type: document.querySelector('select[name="insurance_type"]')?.value || 'Umum',
+                insurance_number: '',
+            });
+
+            document.getElementById('nik').dataset.newNik = nik;
+            newPatientModal.hide();
+            updateStep();
+            validateForm();
+        });
+
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // INSURANCE TOGGLE
-        // ═══════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         document.getElementById('insurance_type').addEventListener('change', function() {
             document.getElementById('insuranceNumberGroup').classList.toggle('d-none', this.value !== 'BPJS');
             validateForm();
         });
 
-        // ═══════════════════════════════════════════════════════════════
-        // POLYCLINIC → DOCTOR FILTER
-        // ═══════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // POLYCLINIC â†’ DOCTOR FILTER
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         document.getElementById('polyclinic_id').addEventListener('change', function() {
             const polyId = this.value;
             const sel = document.getElementById('doctor_id');
@@ -895,9 +922,9 @@
             validateForm();
         });
 
-        // ═══════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // FORM VALIDATION
-        // ═══════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         function validateForm() {
             const btn = document.getElementById('btnSubmit');
             const pid = document.getElementById('patient_id').value;
@@ -918,14 +945,17 @@
             if (el) el.addEventListener('change', validateForm);
         });
         document.querySelectorAll('input[name="gender"]').forEach(el => el.addEventListener('change', validateForm));
-        document.querySelectorAll('#newPatientSection input').forEach(el => el.addEventListener('input', validateForm));
+        document.querySelectorAll('#newPatientModal input, #newPatientModal select').forEach(el => {
+            el.addEventListener('input', validateForm);
+            el.addEventListener('change', validateForm);
+        });
 
         updateStep();
         validateForm();
 
-        // ═══════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // TAB 2: QUEUE FILTER + AUTO-REFRESH
-        // ═══════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         document.getElementById('qFilterBtn').addEventListener('click', filterQueue);
         document.getElementById('qFilterBtn').click = filterQueue;
 
@@ -946,9 +976,9 @@
                 'id-ID');
         }, 1000);
 
-        // ═══════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // TAB 3: HISTORY FILTER
-        // ═══════════════════════════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         document.getElementById('hFilterBtn').addEventListener('click', function() {
             const from = document.getElementById('hDateFrom').value;
             const to = document.getElementById('hDateTo').value;
@@ -961,5 +991,6 @@
                 })
                 .catch(() => {});
         });
+    });
     </script>
 @endpush

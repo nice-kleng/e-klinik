@@ -3,127 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Display Antrean</title>
+    <title>Pilih Poli — Display Antrean</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
-            background: #0a1628;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
             color: #fff;
-            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
         }
-        .header {
-            padding: 20px 30px;
-            background: linear-gradient(135deg, #1a2a4a, #0a1628);
-            border-bottom: 3px solid #00d4ff;
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0, 212, 255, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 90%, rgba(123, 31, 162, 0.06) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
         }
-        .header h1 {
+        h1 {
+            position: relative;
+            z-index: 1;
             font-size: 2.5rem;
             font-weight: 800;
-            letter-spacing: 2px;
-            color: #00d4ff;
+            letter-spacing: 4px;
+            margin-bottom: 3rem;
+            background: linear-gradient(135deg, #00d4ff, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .poli-grid {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            max-width: 900px;
+            width: 100%;
+            padding: 0 20px;
         }
         .poli-card {
-            background: #1a2a4a;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .poli-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #00d4ff;
-            border-bottom: 2px solid rgba(255,255,255,0.1);
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-        }
-        .queue-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        .queue-item {
-            background: rgba(255,255,255,0.05);
-            border-radius: 8px;
-            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 20px;
+            padding: 32px 20px;
             text-align: center;
-            min-width: 100px;
+            text-decoration: none;
+            color: #fff;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
-        .queue-item .number {
-            font-size: 1.4rem;
-            font-weight: 700;
+        .poli-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.03), rgba(124, 58, 237, 0.03));
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
-        .queue-item .name {
-            font-size: 0.8rem;
-            opacity: 0.7;
+        .poli-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(0, 212, 255, 0.25);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+            color: #fff;
         }
-        .queue-item.waiting { border-left: 3px solid #ffc107; }
-        .queue-item.called { border-left: 3px solid #0dcaf0; animation: pulse 1.5s infinite; }
-        .queue-item.in_progress { border-left: 3px solid #0d6efd; }
-        @keyframes pulse {
-            0% { background: rgba(13,202,240,0.1); }
-            50% { background: rgba(13,202,240,0.2); }
-            100% { background: rgba(13,202,240,0.1); }
+        .poli-card:hover::before {
+            opacity: 1;
         }
-        .now-playing {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(135deg, #00d4ff, #007bff);
-            color: #000;
-            padding: 20px 30px;
-            text-align: center;
-            font-weight: 800;
+        .poli-card .icon {
             font-size: 2.5rem;
-            letter-spacing: 4px;
+            margin-bottom: 12px;
+            position: relative;
+            z-index: 1;
         }
-        .clock {
-            font-size: 1.2rem;
-            opacity: 0.6;
+        .poli-card .name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            position: relative;
+            z-index: 1;
+        }
+        .poli-card .code {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            font-size: 0.7rem;
+            opacity: 0.2;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            z-index: 1;
+        }
+        .badge-waiting {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            position: relative;
+            z-index: 1;
+        }
+        .badge-waiting.has-waiting {
+            background: rgba(251, 191, 36, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.2);
+        }
+        .badge-waiting.empty {
+            background: rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
     </style>
 </head>
 <body>
-    <div class="header d-flex justify-content-between align-items-center">
-        <h1>ANTREAN POLIKLINIK</h1>
-        <div class="clock" id="clock"></div>
+    <h1>PILIH POLI</h1>
+    <div class="poli-grid">
+        @forelse($polyclinics as $poli)
+            <a href="{{ route('queues.display-tv', $poli) }}" class="poli-card" target="_blank">
+                <span class="code">{{ $poli->code }}</span>
+                <div class="icon">🏥</div>
+                <div class="name">{{ $poli->name }}</div>
+                @if($poli->waiting_count > 0)
+                    <span class="badge-waiting has-waiting">Menunggu {{ $poli->waiting_count }}</span>
+                @else
+                    <span class="badge-waiting empty">Kosong</span>
+                @endif
+            </a>
+        @empty
+            <div class="col-12 text-center text-muted py-5">
+                <h4>Tidak ada poli aktif</h4>
+            </div>
+        @endforelse
     </div>
-
-    <div class="container-fluid p-4" style="padding-bottom: 100px;">
-        <div class="row">
-            @forelse($polyclinics as $poli)
-                <div class="col-md-6 col-lg-4">
-                    <div class="poli-card">
-                        <div class="poli-title">{{ $poli->name }}</div>
-                        <div class="queue-list">
-                            @forelse($poli->queues as $q)
-                                @php $reg = $q->registration; @endphp
-                                <div class="queue-item {{ $q->status }}">
-                                    <div class="number">{{ $q->queue_number }}</div>
-                                    <div class="name">{{ $reg?->patient?->name ?? '-' }}</div>
-                                </div>
-                            @empty
-                                <div class="text-muted small">Tidak ada antrean</div>
-                            @endforelse
-                        </div>
-                    </div>
-                </div>
-            @empty
-                <div class="col-12 text-center py-5">
-                    <h4 class="text-muted">Tidak ada poli aktif</h4>
-                </div>
-            @endforelse
-        </div>
-    </div>
-
-    <script>
-        function updateClock() {
-            document.getElementById('clock').textContent = new Date().toLocaleTimeString('id-ID');
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
-        setTimeout(function() { location.reload(); }, 30000);
-    </script>
 </body>
 </html>

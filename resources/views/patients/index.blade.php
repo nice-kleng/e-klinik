@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.volt')
 
 @section('content')
 <div class="container-fluid">
@@ -61,7 +61,7 @@
                                 <a href="{{ route('patients.show', $patient) }}" class="btn btn-sm btn-info">Detail</a>
                                 <a href="{{ route('patients.edit', $patient) }}" class="btn btn-sm btn-warning">Edit</a>
                                 <a href="{{ route('patients.print-card', $patient) }}" class="btn btn-sm btn-secondary" target="_blank">
-                                    <i class="bi bi-printer"></i>
+                                    <i class="fa fa-print"></i>
                                 </a>
                                 <form action="{{ route('patients.destroy', $patient) }}" method="POST" class="d-inline" data-confirm="Hapus pasien ini?">
                                     @csrf

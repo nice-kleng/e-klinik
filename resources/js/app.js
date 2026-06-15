@@ -1,5 +1,20 @@
-import 'bootstrap';
+import * as bootstrap from 'bootstrap';
 import Swal from 'sweetalert2';
+import Echo from 'laravel-echo';
+import Pusher from 'pusher-js';
+
+window.bootstrap = bootstrap;
+window.Swal = Swal;
+window.Pusher = Pusher;
+window.Echo = new Echo({
+    broadcaster: 'reverb',
+    key: import.meta.env.VITE_REVERB_APP_KEY,
+    wsHost: import.meta.env.VITE_REVERB_HOST,
+    wsPort: import.meta.env.VITE_REVERB_PORT ?? 8080,
+    wssPort: import.meta.env.VITE_REVERB_PORT ?? 8080,
+    forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
+    enabledTransports: ['ws', 'wss'],
+});
 
 document.addEventListener('DOMContentLoaded', function () {
     const Toast = Swal.mixin({
@@ -45,4 +60,22 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
     });
+
+    window.Echo.channel('queue')
+        .listen('QueueUpdated', (e) => {
+            const label = {
+                called: 'dipanggil',
+                in_progress: 'diproses',
+                completed: 'selesai',
+                cancelled: 'dibatalkan',
+            }[e.action] ?? e.action;
+
+            Toast.fire({
+                icon: 'info',
+                title: `Antrean ${e.queueNumber} ${label}`,
+                timer: 4000,
+            });
+
+            document.dispatchEvent(new CustomEvent('queue-updated', { detail: e }));
+        });
 });

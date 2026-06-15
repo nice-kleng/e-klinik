@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Doctor;
 use App\Models\Patient;
 use App\Models\Polyclinic;
+use App\Events\QueueUpdated;
 use App\Models\Queue;
 use App\Models\QueueCall;
 use App\Models\QueueMilestone;
@@ -97,6 +98,16 @@ class QueueService
             'created_by' => auth()->id(),
         ]);
 
+        QueueUpdated::dispatch(
+            queueId: $queue->id,
+            polyclinicId: $polyclinic->id,
+            status: 'waiting',
+            action: 'created',
+            queueNumber: $queue->queue_number,
+            patientName: $patient->name,
+            polyclinicName: $polyclinic->name,
+        );
+
         if ($patient->insurance_type === 'BPJS') {
             try {
                 $this->syncToBpjs($queue, $registration);
@@ -146,6 +157,38 @@ class QueueService
         $queue->update([
             'status' => self::STATUS_CALLED,
         ]);
+
+        return $queue->fresh();
+    }
+
+    public function callAndProgress(Polyclinic $polyclinic): ?Queue
+    {
+        $queue = Queue::where('polyclinic_id', $polyclinic->id)
+            ->whereDate('queue_date', now()->toDateString())
+            ->where('status', self::STATUS_WAITING)
+            ->orderBy('queue_sequence', 'asc')
+            ->first();
+
+        if (!$queue) {
+            return null;
+        }
+
+        $lastCall = QueueCall::where('queue_id', $queue->id)
+            ->max('call_sequence');
+
+        QueueCall::create([
+            'queue_id' => $queue->id,
+            'polyclinic_id' => $polyclinic->id,
+            'called_by' => auth()->id(),
+            'call_sequence' => ($lastCall ?? 0) + 1,
+            'called_at' => now(),
+        ]);
+
+        $queue->update([
+            'status' => self::STATUS_IN_PROGRESS,
+        ]);
+
+        $queue->registration?->update(['service_status' => 'in_consultation']);
 
         return $queue->fresh();
     }

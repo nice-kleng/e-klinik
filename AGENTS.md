@@ -10,7 +10,7 @@
 ## Commands
 | Command | What |
 |---------|------|
-| `composer dev` | Runs server + queue listener + logs + Vite concurrently |
+| `composer dev` | Runs server + queue listener + logs + Reverb + Vite concurrently |
 | `php artisan migrate` | Runs 45 migrations (all tables) |
 | `php artisan db:seed` | Seeds: roles, master data (poli/dokter/kategori), meds, suppliers, patients, lab, ICD-10 |
 | `php artisan satusehat:sync {type?} {--force}` | Sync unsynced data to Satu Sehat (patients/encounters/conditions/all) |
@@ -71,14 +71,41 @@ BPJS_CONS_ID= / BPJS_SECRET_KEY= / BPJS_USER_KEY=
 SATUSEHAT_CLIENT_ID= / SATUSEHAT_CLIENT_SECRET= / SATUSEHAT_ORGANIZATION_ID=
 ```
 
+### Realtime (Laravel Reverb + Laravel Echo)
+- **Laravel Reverb** installed (v1.10.2) — WebSocket server
+- **laravel-echo** npm package installed — client-side WebSocket consumer
+- `BROADCAST_CONNECTION=reverb` di `.env`
+- `composer dev` menjalankan `php artisan reverb:start --debug`
+- `app/Events/QueueUpdated` — broadcast event (public channel `queue`, implements `ShouldBroadcastNow`), dikirim dari:
+  - `registerQueue()` — action `created` (real-time muncul di display TV)
+  - `callAjax()` — action `called` (trigger TTS + banner)
+  - `inProgress()/complete()/cancel()` — action `in_progress`/`completed`/`cancelled`
+- Property event: `queueId`, `polyclinicId`, `status`, `action`, `queueNumber`, `patientName`, `polyclinicName`, `polyclinicQueueCount`, `actionPayload`
+- `resources/js/app.js` — inisialisasi Echo, dengarkan `QueueUpdated`, tampilkan toast + dispatch custom event `queue-updated`
+- `resources/views/queues/index.blade.php` — dengarkan `queue-updated`, auto-refresh tabel + TTS otomatis
+- Display TV (`resources/views/queues/display-tv.blade.php`) — dengarkan `QueueUpdated` via Echo (filter by polyclinicId), show banner + TTS + rerender. Polling fallback setiap 5 detik
+- Display landing (`resources/views/queues/display.blade.php`) — grid per poli dengan glassmorphism design
+- Display routes (`/queues/display/tv`, `/queues/display-json`) tanpa middleware role (hanya session auth)
+- **Penting:** Semua elemen DOM di display TV selalu di-render di HTML (sembunyikan dengan `style="display:none"`), bukan conditional `@if/@else` — mencegah null reference di JS `rerender()`
+
 ### TTS / Voice Call
+- **Browser SpeechSynthesis API** — TTS real-time saat panggil antrean (bahasa Indonesia `id-ID`)
+- Tombol "Dengarkan" di queue index untuk memutar ulang announcement
+- Auto-TTS saat `QueueUpdated` dengan action `called` (dari Echo listener)
 - `VoiceCallService` → `TtsProvider` interface (GoogleCloudTtsProvider | BrowserTtsProvider fallback)
 - Switched by `services.google_tts.api_key` config
-- Announcement templates in Indonesian
+- Announcement templates in Indonesian: `"Nomor antrean {number}, {nama}, silakan menuju {poli}"`
+
+### Queue Controller — Web Actions
+- **`callAjax()`** — method AJAX tanpa redirect. Panggil `callAndProgress()` + fire `QueueUpdated` action `called`
+- **`queueData()`** — JSON endpoint detail queue (status, patient, polyclinic)
+- **`inProgress()`/`complete()`/`cancel()`** — dual response: JSON untuk AJAX (`expectsJson()`), redirect untuk form
+- **Tombol di index:** Panggil (AJAX), Proses/Selesai/Batal (AJAX), Detail (link redirect)
+- **Role-aware:** receptionist hanya lihat Panggil + Batal, doctor/perawat lihat semua aksi
 
 ## Conventions
 - All response messages in **Indonesian**
-- Queue lifecycle: waiting → called → in_progress → completed (or cancelled)
+- Queue lifecycle: waiting → in_progress → completed (or cancelled) — **Panggil langsung in_progress**, tidak ada status `called` persisten. `called` hanya digunakan sebagai action event untuk trigger TTS/banner
 - Registration lifecycle: registered → in_consultation → lab/pharmacy/cashier → completed (or cancelled)
 - Soft deletes: users, patients, medical_records, medicines
 - ICD-10 seeder is a **migration** (not seeder class) at `database/migrations/000021_*`
@@ -91,6 +118,7 @@ SATUSEHAT_CLIENT_ID= / SATUSEHAT_CLIENT_SECRET= / SATUSEHAT_ORGANIZATION_ID=
 - **Patient** tambah kolom: `education`, `mother_name`, `emergency_contact`, `allergy`
 - **MedicalRecord** tambah kolom: `registration_id` (FK)
 - **BpjsSep** tambah kolom: `registration_id` (FK)
+- **Role baru**: `receptionist` (untuk pendaftaran, pisah dari cashier)
 - **Role baru**: `receptionist` (untuk pendaftaran, pisah dari cashier)
 - **Relasi**: `patients → registrations → queues → queue_calls/milestones`
 - Akses pasien via Queue: `$queue->registration->patient` (bukan `$queue->patient`)
@@ -123,4 +151,3 @@ SATUSEHAT_CLIENT_ID= / SATUSEHAT_CLIENT_SECRET= / SATUSEHAT_ORGANIZATION_ID=
 - **Volt Admin template** — not yet overlaid
 - **BPJS/SatuSehat ENV** — credentials kosong, bridging tidak bisa diuji
 - **Email config** — default Laravel, belum diganti
-- **Display TV** — hanya JSON endpoint + Blade sederhana, belum ada UI real-time

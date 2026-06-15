@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.volt')
 
 @section('content')
 <div class="container-fluid">
@@ -137,7 +137,7 @@
                 @foreach($registration->medicalRecords as $record)
                 <div class="card border-0 shadow-sm mb-3">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0">Rekam Medis — {{ $record->visit_date?->format('d/m/Y') }}</h6>
+                        <h6 class="mb-0">Rekam Medis â€” {{ $record->visit_date?->format('d/m/Y') }}</h6>
                         <a href="{{ route('medical-records.show', $record) }}" class="btn btn-sm btn-outline-primary">
                             <i class="bi bi-eye"></i> Detail
                         </a>

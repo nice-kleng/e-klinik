@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.volt')
 
 @section('content')
 <div class="container-fluid">
@@ -113,7 +113,7 @@
                         <input type="number" name="vital_signs[heart_rate]" class="form-control" value="{{ $vs['heart_rate'] ?? '' }}">
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label">Suhu (°C)</label>
+                        <label class="form-label">Suhu (Â°C)</label>
                         <input type="text" name="vital_signs[temperature]" class="form-control" value="{{ $vs['temperature'] ?? '' }}" placeholder="36.5">
                     </div>
                     <div class="col-md-2">
@@ -129,7 +129,7 @@
                         <input type="number" step="0.1" name="vital_signs[height]" class="form-control" value="{{ $vs['height'] ?? '' }}">
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label">SpO₂ (%)</label>
+                        <label class="form-label">SpOâ‚‚ (%)</label>
                         <input type="number" name="vital_signs[oxygen_saturation]" class="form-control" value="{{ $vs['oxygen_saturation'] ?? '' }}">
                     </div>
                 </div>

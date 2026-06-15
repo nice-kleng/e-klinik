@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.volt')
 
 @section('content')
 <div class="container-fluid">
@@ -11,7 +11,7 @@
 
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body">
-            <form method="GET" class="row g-2 align-items-end">
+            <form method="GET" class="row g-2 align-items-end" id="filterForm">
                 <div class="col-md-3">
                     <label class="form-label">Tanggal</label>
                     <input type="date" name="date" class="form-control" value="{{ $date }}">
@@ -48,7 +48,7 @@
 
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
-            <table class="table table-striped mb-0">
+            <table class="table table-striped mb-0" id="queueTable">
                 <thead>
                     <tr>
                         <th>No. Antrean</th>
@@ -57,13 +57,13 @@
                         <th>Dokter</th>
                         <th>Sumber</th>
                         <th>Status</th>
-                        <th width="200">Aksi</th>
+                        <th width="280">Aksi</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="queueTableBody">
                     @forelse($queues as $queue)
                         @php $reg = $queue->registration; @endphp
-                        <tr>
+                        <tr data-queue-id="{{ $queue->id }}" data-status="{{ $queue->status }}">
                             <td><strong>{{ $queue->queue_number }}</strong></td>
                             <td>{{ $reg?->patient?->name ?? '-' }}</td>
                             <td>{{ $queue->polyclinic?->name ?? '-' }}</td>
@@ -95,44 +95,198 @@
                                 <span class="badge {{ $statusBadge }}">{{ $statusLabel }}</span>
                             </td>
                             <td>
+                                @php $isReceptionist = auth()->user()->hasRole('receptionist'); @endphp
+
                                 @if(in_array($queue->status, ['waiting', 'called']))
                                     @if($queue->status == 'waiting')
-                                        <form action="{{ route('queues.call', $queue) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            <button class="btn btn-sm btn-info">Panggil</button>
-                                        </form>
+                                        <button class="btn btn-sm btn-info btn-call" data-queue-id="{{ $queue->id }}" data-url="{{ route('queues.call-ajax', $queue) }}">Panggil</button>
                                     @endif
-                                    <form action="{{ route('queues.in-progress', $queue) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        <button class="btn btn-sm btn-primary">Proses</button>
-                                    </form>
+                                    @unless($isReceptionist)
+                                    <button class="btn btn-sm btn-primary btn-process" data-queue-id="{{ $queue->id }}" data-url="{{ route('queues.in-progress', $queue) }}">Proses</button>
+                                    @endunless
                                 @endif
+                                @unless($isReceptionist)
                                 @if(in_array($queue->status, ['waiting', 'called', 'in_progress']))
-                                    <form action="{{ route('queues.complete', $queue) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        <button class="btn btn-sm btn-success">Selesai</button>
-                                    </form>
+                                    <button class="btn btn-sm btn-success btn-complete" data-queue-id="{{ $queue->id }}" data-url="{{ route('queues.complete', $queue) }}">Selesai</button>
                                 @endif
+                                @endunless
                                 @if(in_array($queue->status, ['waiting', 'called']))
-                                    <form action="{{ route('queues.cancel', $queue) }}" method="POST" class="d-inline" data-confirm="Batalkan antrean ini?">
-                                        @csrf
-                                        <button class="btn btn-sm btn-danger">Batal</button>
-                                    </form>
+                                    <button class="btn btn-sm btn-danger btn-cancel" data-queue-id="{{ $queue->id }}" data-url="{{ route('queues.cancel', $queue) }}">Batal</button>
                                 @endif
                                 <a href="{{ route('queues.show', $queue) }}" class="btn btn-sm btn-outline-secondary">Detail</a>
                             </td>
                         </tr>
                     @empty
-                        <tr>
+                        <tr id="emptyRow">
                             <td colspan="7" class="text-center text-muted py-4">Tidak ada antrean</td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-        <div class="card-footer bg-white">
+        <div class="card-footer bg-white" id="paginationFooter">
             {{ $queues->links() }}
         </div>
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+let ttsQueue = [];
+
+function getTtsVoice() {
+    const voices = window.speechSynthesis.getVoices();
+    return voices.find(v => v.lang.startsWith('id')) || voices.find(v => v.lang === 'id-ID') || voices[0] || null;
+}
+
+function speakText(text) {
+    if (!('speechSynthesis' in window)) return;
+    return new Promise(resolve => {
+        ttsQueue.push(resolve);
+        const utterance = new SpeechSynthesisUtterance(text);
+        const voice = getTtsVoice();
+        if (voice) utterance.voice = voice;
+        utterance.lang = voice ? voice.lang : 'id-ID';
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+        utterance.onend = () => {
+            const fn = ttsQueue.shift();
+            if (fn) fn();
+        };
+        utterance.onerror = () => {
+            const fn = ttsQueue.shift();
+            if (fn) fn();
+        };
+        setTimeout(() => window.speechSynthesis.speak(utterance), 100);
+    });
+}
+
+async function speakCall(queueNumber, polyclinic, patientName) {
+    const text = `Nomor antrean ${queueNumber}, ${patientName}, silakan menuju ${polyclinic}`;
+    for (let i = 0; i < 3; i++) {
+        await speakText(text);
+    }
+}
+
+if ('speechSynthesis' in window) {
+    speechSynthesis.getVoices();
+    speechSynthesis.addEventListener('voiceschanged', () => speechSynthesis.getVoices(), { once: true });
+}
+
+function refreshTable() {
+    fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newBody = doc.querySelector('#queueTableBody');
+            if (newBody) {
+                document.querySelector('#queueTableBody').innerHTML = newBody.innerHTML;
+            }
+            const newFooter = doc.querySelector('#paginationFooter');
+            if (newFooter) {
+                document.querySelector('#paginationFooter').innerHTML = newFooter.innerHTML;
+            }
+        })
+        .catch(() => location.reload());
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+
+    document.querySelector('#queueTableBody').addEventListener('click', function (e) {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+
+        if (btn.classList.contains('btn-call')) {
+            e.preventDefault();
+            const url = btn.dataset.url;
+            btn.disabled = true;
+            btn.innerHTML = 'Memanggil...';
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrf,
+                    'Accept': 'application/json',
+                },
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    refreshTable();
+                    speakCall(res.data.queue.queue_number, res.data.queue.polyclinic_name, res.data.queue.patient_name);
+                } else {
+                    alert(res.message || 'Gagal memanggil antrean');
+                }
+            })
+            .catch(() => alert('Gagal memanggil antrean'))
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = 'Panggil';
+            });
+        }
+
+        if (btn.classList.contains('btn-process')) {
+            e.preventDefault();
+            const url = btn.dataset.url;
+            btn.disabled = true;
+            fetch(url, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success !== false) refreshTable();
+                else alert(res.message || 'Gagal');
+            })
+            .catch(() => {})
+            .finally(() => { btn.disabled = false; });
+        }
+
+        if (btn.classList.contains('btn-complete')) {
+            e.preventDefault();
+            const url = btn.dataset.url;
+            btn.disabled = true;
+            fetch(url, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success !== false) refreshTable();
+                else alert(res.message || 'Gagal');
+            })
+            .catch(() => {})
+            .finally(() => { btn.disabled = false; });
+        }
+
+        if (btn.classList.contains('btn-cancel')) {
+            e.preventDefault();
+            if (!confirm('Batalkan antrean ini?')) return;
+            const url = btn.dataset.url;
+            btn.disabled = true;
+            fetch(url, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success !== false) refreshTable();
+                else alert(res.message || 'Gagal');
+            })
+            .catch(() => {})
+            .finally(() => { btn.disabled = false; });
+        }
+    });
+});
+
+document.addEventListener('queue-updated', function (e) {
+    const data = e.detail;
+    if (data.action === 'called') {
+        speakCall(data.queueNumber, data.polyclinicName || '', data.patientName || '');
+    }
+    refreshTable();
+});
+</script>
+@endpush

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.volt')
 
 @section('content')
 <div class="container-fluid">
@@ -90,11 +90,11 @@
                             <tr>
                                 <th>TD (mmHg)</th>
                                 <th>Nadi (x/mnt)</th>
-                                <th>Suhu (°C)</th>
+                                <th>Suhu (Â°C)</th>
                                 <th>RR (x/mnt)</th>
                                 <th>BB (kg)</th>
                                 <th>TB (cm)</th>
-                                <th>SpO₂ (%)</th>
+                                <th>SpOâ‚‚ (%)</th>
                             </tr>
                         </thead>
                         <tbody>
