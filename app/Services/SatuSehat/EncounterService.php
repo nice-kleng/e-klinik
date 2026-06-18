@@ -105,13 +105,22 @@ class EncounterService
 
     protected function buildEncounterResource(MedicalRecord $mr): array
     {
-        $mr->loadMissing(['patient', 'doctor', 'polyclinic']);
+        $mr->loadMissing(['patient', 'doctor', 'polyclinic', 'registration']);
 
         $patientRef = $this->getPatientSsId($mr->patient);
         $practitionerRef = $this->getPractitionerSsId($mr->doctor);
+        $locationRef = $this->getLocationSsId($mr->polyclinic);
+        $orgId = config('satusehat.organization_id');
 
         $resource = [
             'resourceType' => 'Encounter',
+            'identifier' => [
+                [
+                    'use' => 'official',
+                    'system' => 'http://sys-ids.kemkes.go.id/encounter/' . $orgId,
+                    'value' => $mr->registration?->registration_number ?? 'MR-' . $mr->id,
+                ],
+            ],
             'status' => 'arrived',
             'class' => [
                 'system' => 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
@@ -122,26 +131,11 @@ class EncounterService
                 'reference' => 'Patient/' . ($patientRef ?? $mr->patient->nik),
                 'display' => $mr->patient->name,
             ],
-            'participant' => [
-                [
-                    'individual' => [
-                        'reference' => 'Practitioner/' . ($practitionerRef ?? ''),
-                        'display' => $mr->doctor->name,
-                    ],
-                ],
-            ],
             'period' => [
                 'start' => $mr->visit_date?->format('Y-m-d\TH:i:sP') ?? now()->format('Y-m-d\TH:i:sP'),
             ],
-            'location' => [
-                [
-                    'location' => [
-                        'display' => $mr->polyclinic?->name ?? '',
-                    ],
-                ],
-            ],
             'serviceProvider' => [
-                'reference' => 'Organization/' . config('satusehat.organization_id'),
+                'reference' => 'Organization/' . $orgId,
             ],
             'statusHistory' => [
                 [
@@ -153,7 +147,42 @@ class EncounterService
             ],
         ];
 
+        if ($practitionerRef) {
+            $resource['participant'] = [
+                [
+                    'individual' => [
+                        'reference' => 'Practitioner/' . $practitionerRef,
+                        'display' => $mr->doctor->name,
+                    ],
+                ],
+            ];
+        }
+
+        if ($locationRef) {
+            $resource['location'] = [
+                [
+                    'location' => [
+                        'reference' => 'Location/' . $locationRef,
+                        'display' => $mr->polyclinic?->name ?? 'Poli',
+                    ],
+                ],
+            ];
+        }
+
         return $resource;
+    }
+
+    protected function getLocationSsId($polyclinic): ?string
+    {
+        if (!$polyclinic) {
+            return null;
+        }
+
+        return SatusehatResource::where('model_type', get_class($polyclinic))
+            ->where('model_id', $polyclinic->id)
+            ->where('resource_type', 'Location')
+            ->where('status', 'synced')
+            ->value('resource_id_ss');
     }
 
     protected function getPatientSsId($patient): ?string

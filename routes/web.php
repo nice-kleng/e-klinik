@@ -17,6 +17,11 @@ use App\Http\Controllers\Web\LabRequestController;
 use App\Http\Controllers\Web\LabResultController;
 use App\Http\Controllers\Web\RegistrationController;
 use App\Http\Controllers\Web\DoctorController;
+use App\Http\Controllers\Web\TriageController;
+use App\Http\Controllers\Web\PatientEducationController;
+use App\Http\Controllers\Web\VisitSummaryController;
+use App\Http\Controllers\Web\LetterController;
+use App\Http\Controllers\Web\AttachmentController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -159,6 +164,49 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/{labResult}/edit', [LabResultController::class, 'edit'])->name('edit');
         Route::put('/{labResult}', [LabResultController::class, 'update'])->name('update');
     });
+
+    // ─── Triage (Asesmen Perawat) ──────────────────────────
+    Route::prefix('triage')->name('triage.')->middleware('role:admin|receptionist|nurse')->group(function () {
+        Route::get('/create/{registration}', [TriageController::class, 'create'])->name('create');
+        Route::post('/', [TriageController::class, 'store'])->name('store');
+        Route::get('/{triage}', [TriageController::class, 'show'])->name('show');
+        Route::get('/{triage}/edit', [TriageController::class, 'edit'])->name('edit');
+        Route::put('/{triage}', [TriageController::class, 'update'])->name('update');
+    });
+
+    // ─── Edukasi Pasien ───────────────────────────────────
+    Route::prefix('medical-records/{medicalRecord}/education')->name('education.')->middleware('role:admin|doctor')->group(function () {
+        Route::get('/create', [PatientEducationController::class, 'create'])->name('create');
+        Route::post('/', [PatientEducationController::class, 'store'])->name('store');
+    });
+
+    // ─── Resume Kunjungan ─────────────────────────────────
+    Route::prefix('registration/{registration}/summary')->name('visit-summary.')->middleware('role:admin|doctor')->group(function () {
+        Route::get('/create', [VisitSummaryController::class, 'create'])->name('create');
+        Route::post('/', [VisitSummaryController::class, 'store'])->name('store');
+    });
+    Route::get('/summary/{visitSummary}', [VisitSummaryController::class, 'show'])
+        ->name('visit-summary.show')
+        ->middleware('role:admin|doctor');
+
+    // ─── Surat-surat ──────────────────────────────────────
+    Route::prefix('letters')->name('letters.')->middleware('role:admin|doctor')->group(function () {
+        Route::get('/sick-leave/{registration}', [LetterController::class, 'sickLeave'])->name('sick-leave');
+        Route::get('/health-certificate/{registration}', [LetterController::class, 'healthCertificate'])->name('health-certificate');
+        Route::get('/referral/{registration}', [LetterController::class, 'referral'])->name('referral');
+        Route::get('/medical-certificate/{registration}', [LetterController::class, 'medicalCertificate'])->name('medical-certificate');
+    });
+
+    // ─── Berkas / Attachment ────────────────────────────
+    Route::post('medical-records/{medical_record}/attachments', [AttachmentController::class, 'store'])
+        ->name('attachments.store')
+        ->middleware('role:admin|doctor');
+    Route::get('attachments/{attachment}/download', [AttachmentController::class, 'download'])
+        ->name('attachments.download')
+        ->middleware('auth');
+    Route::delete('attachments/{attachment}', [AttachmentController::class, 'destroy'])
+        ->name('attachments.destroy')
+        ->middleware('role:admin|doctor');
 
     // ─── BPJS JSON Endpoints (internal, via session auth) ──────
     Route::prefix('bpjs')->name('bpjs.')->group(function () {

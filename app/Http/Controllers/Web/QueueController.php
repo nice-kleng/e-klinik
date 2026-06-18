@@ -29,7 +29,7 @@ class QueueController extends Controller
         $polyclinicId = $request->get('polyclinic_id');
         $status = $request->get('status');
 
-        $query = Queue::with(['registration.patient', 'registration.doctor', 'polyclinic'])
+        $query = Queue::with(['registration.patient', 'registration.doctor', 'registration.triage', 'polyclinic'])
             ->where('queue_date', $date);
 
         if ($polyclinicId) {

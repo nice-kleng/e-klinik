@@ -23,9 +23,27 @@ class MedicalRecordController extends Controller
 {
     protected MedicalRecordService $medicalRecordService;
 
+    protected array $specialistPartials = [
+        'PDL'  => 'medical-records.partials.spesialis-penyakit-dalam',
+        'ANAK' => 'medical-records.partials.spesialis-anak',
+        'SARAF'=> 'medical-records.partials.spesialis-saraf',
+        'RAD'  => 'medical-records.partials.spesialis-radiologi',
+        'GIG'  => 'medical-records.partials.spesialis-gigi',
+    ];
+
     public function __construct(MedicalRecordService $medicalRecordService)
     {
         $this->medicalRecordService = $medicalRecordService;
+    }
+
+    private function getSpecialistData(?int $polyclinicId, ?array $existingData = null): array
+    {
+        if (!$polyclinicId) {
+            return ['specialistPartial' => null, 'specialistData' => null];
+        }
+        $code = Polyclinic::where('id', $polyclinicId)->value('code');
+        $partial = $this->specialistPartials[$code] ?? null;
+        return ['specialistPartial' => $partial, 'specialistData' => $existingData];
     }
 
     public function index(Request $request): View
@@ -69,11 +87,12 @@ class MedicalRecordController extends Controller
         $selectedPolyclinicId = null;
         $registrationId = null;
         $visitType = null;
+        $triage = null;
 
         $selectedPatientId = $request->get('patient_id');
 
         if ($queueId) {
-            $queue = Queue::with('registration')->find($queueId);
+            $queue = Queue::with('registration.triage')->find($queueId);
             if ($queue && $queue->registration) {
                 $reg = $queue->registration;
                 $selectedPatientId = $reg->patient_id;
@@ -81,13 +100,16 @@ class MedicalRecordController extends Controller
                 $selectedPolyclinicId = $reg->polyclinic_id;
                 $registrationId = $reg->id;
                 $visitType = $reg->visit_type;
+                $triage = $reg->triage;
             }
         }
 
+        $specialistInfo = $this->getSpecialistData($selectedPolyclinicId);
+
         return view('medical-records.create', compact(
             'patients', 'polyclinics', 'doctors',
-            'queueId', 'selectedPatientId', 'selectedDoctorId', 'selectedPolyclinicId', 'registrationId', 'visitType'
-        ));
+            'queueId', 'selectedPatientId', 'selectedDoctorId', 'selectedPolyclinicId', 'registrationId', 'visitType', 'triage'
+        ) + $specialistInfo);
     }
 
     public function store(Request $request): RedirectResponse
@@ -100,23 +122,32 @@ class MedicalRecordController extends Controller
             'queue_id' => 'nullable|exists:queues,id',
             'visit_date' => 'required|date',
             'visit_type' => 'nullable|string|in:Baru,Lama,Kontrol,Rujukan',
-            'subjective_complaint' => 'nullable|string',
+            'subjective_complaint' => 'required|string',
             'objective_finding' => 'nullable|string',
-            'assessment' => 'nullable|string',
+            'assessment' => 'required|string',
             'plan' => 'nullable|string',
             'diagnosis_primary' => 'nullable|string|max:20',
             'diagnosis_secondary' => 'nullable|array',
-            'diagnosis_primary_id' => 'nullable|exists:icd10_diagnoses,id',
+            'diagnosis_primary_id' => 'required|exists:icd10_diagnoses,id',
             'diagnosis_secondary_ids' => 'nullable|array',
             'diagnosis_secondary_ids.*' => 'exists:icd10_diagnoses,id',
             'procedure_ids' => 'nullable|array',
             'procedure_ids.*' => 'exists:icd9_cm_diagnoses,id',
             'procedure_notes' => 'nullable|array',
             'anamnesis' => 'nullable|string',
+            'past_history' => 'nullable|string',
+            'medication_history' => 'nullable|string',
             'physical_exam' => 'nullable|string',
+            'differential_diagnosis' => 'nullable|string',
             'vital_signs' => 'nullable|array',
+            'specialist_data' => 'nullable|array',
             'notes' => 'nullable|string',
             'follow_up_date' => 'nullable|date',
+        ], [
+            'subjective_complaint.required' => 'Keluhan utama harus diisi',
+            'assessment.required' => 'Assessment harus diisi',
+            'diagnosis_primary_id.required' => 'Diagnosis utama (ICD-10) harus dipilih',
+            'diagnosis_primary_id.exists' => 'Diagnosis utama yang dipilih tidak valid',
         ]);
 
         if (empty($validated['visit_type']) && !empty($validated['registration_id'])) {
@@ -152,7 +183,9 @@ class MedicalRecordController extends Controller
             ->limit(20)
             ->get();
 
-        return view('medical-records.show', compact('medicalRecord', 'previousRecords'));
+        $specialistInfo = $this->getSpecialistData($medicalRecord->polyclinic_id, $medicalRecord->specialist_data);
+
+        return view('medical-records.show', compact('medicalRecord', 'previousRecords') + $specialistInfo);
     }
 
     public function workspace(Queue $queue): View
@@ -161,14 +194,19 @@ class MedicalRecordController extends Controller
             'registration.patient',
             'registration.doctor',
             'registration.polyclinic',
+            'registration.triage.triageBy',
+            'registration.summary.creator',
             'polyclinic',
-            'medicalRecord',
+            'medicalRecord.education',
+            'medicalRecord.diagnoses.icd10Diagnosis',
+            'medicalRecord.procedures.icd9CmDiagnosis',
+            'medicalRecord.labRequests',
         ]);
 
         $patientId = $queue->registration?->patient_id;
         $previousRecords = collect();
         if ($patientId) {
-            $previousRecords = MedicalRecord::with(['polyclinic', 'doctor', 'registration'])
+            $previousRecords = MedicalRecord::with(['polyclinic', 'doctor', 'registration', 'diagnoses.icd10Diagnosis'])
                 ->where('patient_id', $patientId)
                 ->orderBy('visit_date', 'desc')
                 ->orderBy('created_at', 'desc')
@@ -176,7 +214,9 @@ class MedicalRecordController extends Controller
                 ->get();
         }
 
-        return view('medical-records.workspace', compact('queue', 'previousRecords'));
+        $prescriptions = $queue->medicalRecord?->prescriptions()->with('items.medicine')->latest()->get() ?? collect();
+
+        return view('medical-records.workspace', compact('queue', 'previousRecords', 'prescriptions'));
     }
 
     public function edit(MedicalRecord $medicalRecord): View
@@ -186,7 +226,9 @@ class MedicalRecordController extends Controller
         $polyclinics = Polyclinic::where('is_active', true)->orderBy('name')->get();
         $doctors = Doctor::with('polyclinic')->where('is_active', true)->orderBy('name')->get();
 
-        return view('medical-records.edit', compact('medicalRecord', 'patients', 'polyclinics', 'doctors'));
+        $specialistInfo = $this->getSpecialistData($medicalRecord->polyclinic_id, $medicalRecord->specialist_data);
+
+        return view('medical-records.edit', compact('medicalRecord', 'patients', 'polyclinics', 'doctors') + $specialistInfo);
     }
 
     public function update(Request $request, MedicalRecord $medicalRecord): RedirectResponse
@@ -197,22 +239,32 @@ class MedicalRecordController extends Controller
             'visit_date' => 'required|date',
             'visit_type' => 'nullable|string|in:Baru,Lama,Kontrol,Rujukan',
             'subjective_complaint' => 'nullable|string',
+            'subjective_complaint' => 'required|string',
             'objective_finding' => 'nullable|string',
-            'assessment' => 'nullable|string',
+            'assessment' => 'required|string',
             'plan' => 'nullable|string',
             'diagnosis_primary' => 'nullable|string|max:20',
             'diagnosis_secondary' => 'nullable|array',
-            'diagnosis_primary_id' => 'nullable|exists:icd10_diagnoses,id',
+            'diagnosis_primary_id' => 'required|exists:icd10_diagnoses,id',
             'diagnosis_secondary_ids' => 'nullable|array',
             'diagnosis_secondary_ids.*' => 'exists:icd10_diagnoses,id',
             'procedure_ids' => 'nullable|array',
             'procedure_ids.*' => 'exists:icd9_cm_diagnoses,id',
             'procedure_notes' => 'nullable|array',
             'anamnesis' => 'nullable|string',
+            'past_history' => 'nullable|string',
+            'medication_history' => 'nullable|string',
             'physical_exam' => 'nullable|string',
+            'differential_diagnosis' => 'nullable|string',
             'vital_signs' => 'nullable|array',
+            'specialist_data' => 'nullable|array',
             'notes' => 'nullable|string',
             'follow_up_date' => 'nullable|date',
+        ], [
+            'subjective_complaint.required' => 'Keluhan utama harus diisi',
+            'assessment.required' => 'Assessment harus diisi',
+            'diagnosis_primary_id.required' => 'Diagnosis utama (ICD-10) harus dipilih',
+            'diagnosis_primary_id.exists' => 'Diagnosis utama yang dipilih tidak valid',
         ]);
 
         try {

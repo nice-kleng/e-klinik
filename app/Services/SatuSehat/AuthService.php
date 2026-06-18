@@ -21,7 +21,7 @@ class AuthService
         $this->clientSecret = config('satusehat.client_secret');
 
         $this->client = new Client([
-            'base_uri' => $this->authUrl,
+            'base_uri' => rtrim($this->authUrl, '/') . '/',
             'timeout' => config('satusehat.timeout', 30),
             'verify' => false,
         ]);
@@ -48,9 +48,8 @@ class AuthService
     protected function authenticate(): string
     {
         try {
-            $response = $this->client->post('accesstoken', [
+            $response = $this->client->post('accesstoken?grant_type=client_credentials', [
                 'form_params' => [
-                    'grant_type' => 'client_credentials',
                     'client_id' => $this->clientId,
                     'client_secret' => $this->clientSecret,
                 ],

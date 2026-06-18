@@ -2,10 +2,31 @@
 
 @section('content')
 <div class="container-fluid">
+    @php
+        $reg = $medicalRecord->registration;
+        $triage = $reg?->triage;
+        $mr = $medicalRecord;
+        $education = $mr->education;
+        $summary = $reg?->summary;
+    @endphp
+
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="mb-0">Detail Rekam Medis</h4>
         <div class="d-flex gap-2">
-            <a href="{{ route('medical-records.edit', $medicalRecord) }}" class="btn btn-warning">Edit</a>
+            @if($reg)
+                <div class="dropdown">
+                    <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-file-export me-1"></i>Surat
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ route('letters.sick-leave', $reg) }}" target="_blank">Surat Sakit</a></li>
+                        <li><a class="dropdown-item" href="{{ route('letters.health-certificate', $reg) }}" target="_blank">Surat Sehat</a></li>
+                        <li><a class="dropdown-item" href="{{ route('letters.referral', $reg) }}" target="_blank">Surat Rujukan</a></li>
+                        <li><a class="dropdown-item" href="{{ route('letters.medical-certificate', $reg) }}" target="_blank">Keterangan Medis</a></li>
+                    </ul>
+                </div>
+            @endif
+            <a href="{{ route('medical-records.edit', $mr) }}" class="btn btn-warning">Edit</a>
             <a href="{{ route('medical-records.index') }}" class="btn btn-outline-secondary">Kembali</a>
         </div>
     </div>
@@ -13,296 +34,605 @@
     @include('components.alert')
 
     <div class="row g-4">
-        <div class="col-md-5">
+        {{-- Left Column: Patient Info & Triage TTV --}}
+        <div class="col-md-4">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white">
                     <h6 class="mb-0">Data Pasien</h6>
                 </div>
                 <div class="card-body">
                     <table class="table table-sm mb-0">
-                        <tr>
-                            <td class="text-muted" style="width:140px">Nama</td>
-                            <td><strong>{{ $medicalRecord->patient->name ?? '-' }}</strong></td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted">No. RM</td>
-                            <td>{{ $medicalRecord->patient->no_rm ?? '-' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted">NIK</td>
-                            <td>{{ $medicalRecord->patient->nik ?? '-' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted">Jenis Kelamin</td>
-                            <td>{{ $medicalRecord->patient->gender == 'L' ? 'Laki-laki' : 'Perempuan' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted">Usia</td>
-                            <td>{{ $medicalRecord->patient->age }} tahun</td>
-                        </tr>
+                        <tr><td class="text-muted" style="width:120px">Nama</td><td><strong>{{ $mr->patient->name ?? '-' }}</strong></td></tr>
+                        <tr><td class="text-muted">No. RM</td><td>{{ $mr->patient->no_rm ?? '-' }}</td></tr>
+                        <tr><td class="text-muted">NIK</td><td>{{ $mr->patient->nik ?? '-' }}</td></tr>
+                        <tr><td class="text-muted">JK</td><td>{{ $mr->patient->gender == 'L' ? 'Laki-laki' : 'Perempuan' }}</td></tr>
+                        <tr><td class="text-muted">Usia</td><td>{{ $mr->patient->age }} tahun</td></tr>
                     </table>
-                    <a href="{{ route('patients.show', $medicalRecord->patient) }}" class="btn btn-sm btn-outline-info mt-2">Detail Pasien</a>
+                    <a href="{{ route('patients.show', $mr->patient) }}" class="btn btn-sm btn-outline-info mt-2">Detail Pasien</a>
                 </div>
             </div>
 
             <div class="card border-0 shadow-sm mt-3">
                 <div class="card-header bg-white">
-                    <h6 class="mb-0">Informasi Kunjungan</h6>
+                    <h6 class="mb-0">Kunjungan</h6>
                 </div>
                 <div class="card-body">
                     <table class="table table-sm mb-0">
-                        <tr>
-                            <td class="text-muted" style="width:140px">Tanggal</td>
-                            <td>{{ $medicalRecord->visit_date?->format('d/m/Y') }}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted">Dokter</td>
-                            <td>{{ $medicalRecord->doctor->name ?? '-' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted">Poliklinik</td>
-                            <td>{{ $medicalRecord->polyclinic->name ?? '-' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted">Jenis Kunjungan</td>
-                            <td>{{ $medicalRecord->visit_type ?? '-' }}</td>
-                        </tr>
-                        @if($medicalRecord->follow_up_date)
-                            <tr>
-                                <td class="text-muted">Follow-up</td>
-                                <td>{{ $medicalRecord->follow_up_date->format('d/m/Y') }}</td>
-                            </tr>
+                        <tr><td class="text-muted" style="width:120px">Tanggal</td><td>{{ $mr->visit_date?->format('d/m/Y') }}</td></tr>
+                        <tr><td class="text-muted">Dokter</td><td>{{ $mr->doctor->name ?? '-' }}</td></tr>
+                        <tr><td class="text-muted">Poliklinik</td><td>{{ $mr->polyclinic->name ?? '-' }}</td></tr>
+                        <tr><td class="text-muted">Jenis</td><td>{{ $mr->visit_type ?? '-' }}</td></tr>
+                        <tr><td class="text-muted">No. Registrasi</td><td>{{ $reg?->registration_number ?? '-' }}</td></tr>
+                        @if($mr->follow_up_date)
+                            <tr><td class="text-muted">Follow-up</td><td>{{ $mr->follow_up_date->format('d/m/Y') }}</td></tr>
                         @endif
                     </table>
                 </div>
             </div>
-        </div>
 
-        <div class="col-md-7">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0">Tanda-Tanda Vital</h6>
+            {{-- Triage TTV Card --}}
+            @if($triage)
+            <div class="card border-0 shadow-sm mt-3">
+                <div class="card-header bg-white py-2">
+                    <h6 class="mb-0"><i class="fas fa-stethoscope me-1 text-primary"></i>Triage (Asesmen Perawat)</h6>
                 </div>
                 <div class="card-body">
-                    @php $vs = $medicalRecord->vital_signs ?? []; @endphp
-                    @php
-                        $vitals = [
-                            ['label' => 'TD', 'unit' => 'mmHg', 'key' => 'blood_pressure', 'icon' => 'fa-heart-pulse'],
-                            ['label' => 'Nadi', 'unit' => '/menit', 'key' => 'heart_rate', 'icon' => 'fa-heart'],
-                            ['label' => 'Suhu', 'unit' => '°C', 'key' => 'temperature', 'icon' => 'fa-temperature-high'],
-                            ['label' => 'RR', 'unit' => '/menit', 'key' => 'respiratory_rate', 'icon' => 'fa-lungs'],
-                            ['label' => 'SpO₂', 'unit' => '%', 'key' => 'oxygen_saturation', 'icon' => 'fa-droplet'],
-                            ['label' => 'BB', 'unit' => 'kg', 'key' => 'weight', 'icon' => 'fa-weight-scale'],
-                            ['label' => 'TB', 'unit' => 'cm', 'key' => 'height', 'icon' => 'fa-ruler-vertical'],
-                            ['label' => 'GCS', 'unit' => '', 'key' => 'gcs', 'icon' => 'fa-brain'],
-                            ['label' => 'Gula Darah', 'unit' => 'mg/dL', 'key' => 'blood_glucose', 'icon' => 'fa-droplet'],
-                        ];
-                    @endphp
                     <div class="row g-2">
-                        @foreach($vitals as $v)
-                            @php $val = $vs[$v['key']] ?? null; @endphp
-                            <div class="col-4 col-md-3 col-lg-{{ $v['key'] === 'blood_glucose' ? '4' : '2' }}">
-                                <div class="border rounded-3 p-2 text-center h-100 {{ $val ? 'bg-light' : 'bg-white' }}">
-                                    <div class="text-muted small mb-1">
-                                        <i class="fas {{ $v['icon'] }} me-1"></i>{{ $v['label'] }}
-                                    </div>
-                                    <div class="fw-bold fs-5 {{ $val ? 'text-dark' : 'text-muted' }}">
-                                        {{ $val ?? '-' }}
-                                        @if($val && $v['unit'])
-                                            <small class="fw-normal text-muted">{{ $v['unit'] }}</small>
-                                        @endif
+                        @php
+                            $triageVitals = [
+                                ['label' => 'TD', 'unit' => 'mmHg', 'val' => $triage->systolic ? "{$triage->systolic}/{$triage->diastolic}" : null, 'icon' => 'fa-heart-pulse'],
+                                ['label' => 'Nadi', 'unit' => '/menit', 'val' => $triage->heart_rate, 'icon' => 'fa-heart'],
+                                ['label' => 'Suhu', 'unit' => '°C', 'val' => $triage->temperature, 'icon' => 'fa-temperature-high'],
+                                ['label' => 'RR', 'unit' => '/menit', 'val' => $triage->respiratory_rate, 'icon' => 'fa-lungs'],
+                                ['label' => 'SpO₂', 'unit' => '%', 'val' => $triage->oxygen_saturation, 'icon' => 'fa-droplet'],
+                                ['label' => 'BB', 'unit' => 'kg', 'val' => $triage->weight, 'icon' => 'fa-weight-scale'],
+                                ['label' => 'TB', 'unit' => 'cm', 'val' => $triage->height, 'icon' => 'fa-ruler-vertical'],
+                                ['label' => 'GCS', 'unit' => '', 'val' => $triage->gcs, 'icon' => 'fa-brain'],
+                                ['label' => 'Gula Darah', 'unit' => 'mg/dL', 'val' => $triage->blood_glucose, 'icon' => 'fa-droplet'],
+                            ];
+                        @endphp
+                        @foreach($triageVitals as $tv)
+                            <div class="col-4">
+                                <div class="border rounded p-2 text-center h-100 {{ $tv['val'] ? 'bg-light' : 'bg-white' }}">
+                                    <div class="text-muted small"><i class="fas {{ $tv['icon'] }} me-1"></i>{{ $tv['label'] }}</div>
+                                    <div class="fw-bold fs-6">{{ $tv['val'] ?? '-' }}
+                                        @if($tv['val'] && $tv['unit'])<small class="fw-normal text-muted">{{ $tv['unit'] }}</small>@endif
                                     </div>
                                 </div>
                             </div>
                         @endforeach
                     </div>
-                    @if(!empty($vs['notes']))
+                    @if($triage->chief_complaint)
                         <div class="mt-2 p-2 bg-light rounded small">
-                            <strong class="text-muted">Catatan:</strong> {{ $vs['notes'] }}
+                            <strong>Keluhan:</strong> {{ $triage->chief_complaint }}
+                        </div>
+                    @endif
+                    @if($triage->pain_scale)
+                        <div class="mt-1 small"><strong>Skala Nyeri:</strong> {{ $triage->pain_scale }}/10</div>
+                    @endif
+                    @if($triage->allergy_notes)
+                        <div class="mt-1 small"><strong>Alergi:</strong> {{ $triage->allergy_notes }}</div>
+                    @endif
+                    <div class="mt-2 text-muted small">
+                        <i class="fas fa-user-nurse me-1"></i>{{ $triage->triageBy?->name ?? '-' }}
+                        &middot; {{ $triage->triage_at?->format('d/m/Y H:i') }}
+                        <a href="{{ route('triage.show', $triage) }}" class="ms-2">Detail</a>
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            {{-- Tombol Aksi Cepat --}}
+            <div class="d-flex flex-column gap-2 mt-3">
+                @if($reg)
+                    @if(!$summary)
+                        <a href="{{ route('visit-summary.create', $reg) }}" class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-check-circle me-1"></i>Buat Resume Kunjungan
+                        </a>
+                    @else
+                        <a href="{{ route('visit-summary.show', $summary) }}" class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-file-alt me-1"></i>Lihat Resume Kunjungan
+                        </a>
+                    @endif
+                @endif
+                @if(!$education)
+                    <a href="{{ route('education.create', $mr) }}" class="btn btn-outline-warning btn-sm">
+                        <i class="fas fa-book me-1"></i>Edukasi Pasien
+                    </a>
+                @endif
+                <a href="{{ route('prescriptions.create', ['medical_record_id' => $mr->id]) }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-prescription me-1"></i>Buat Resep
+                </a>
+                @if($reg)
+                    <a href="{{ route('queues.history', $reg) }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-history me-1"></i>Riwayat Kunjungan
+                    </a>
+                @endif
+            </div>
+        </div>
+
+        {{-- Right Column: SOAP --}}
+        <div class="col-md-8">
+            {{-- S: Subjective --}}
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white"><h6 class="mb-0">S — Subjective</h6></div>
+                <div class="card-body">
+                    @if($mr->subjective_complaint)
+                        <h6 class="text-muted small">Keluhan Utama / RPS</h6>
+                        <p>{{ $mr->subjective_complaint }}</p>
+                    @endif
+                    @if($mr->anamnesis)
+                        <h6 class="text-muted small">Anamnesis</h6>
+                        <p>{{ $mr->anamnesis }}</p>
+                    @endif
+                    @if($mr->past_history)
+                        <h6 class="text-muted small">Riwayat Penyakit Dahulu</h6>
+                        <p>{{ $mr->past_history }}</p>
+                    @endif
+                    @if($mr->medication_history)
+                        <h6 class="text-muted small">Riwayat Pengobatan</h6>
+                        <p>{{ $mr->medication_history }}</p>
+                    @endif
+                    @if(!$mr->subjective_complaint && !$mr->anamnesis && !$mr->past_history && !$mr->medication_history)
+                        <p class="text-muted mb-0">-</p>
+                    @endif
+                </div>
+            </div>
+
+            {{-- O: Objective --}}
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white"><h6 class="mb-0">O — Objective</h6></div>
+                <div class="card-body">
+                    @php $vs = $mr->vital_signs ?? []; @endphp
+                    @if($vs)
+                        <h6 class="text-muted small">Tanda Vital (Dokter)</h6>
+                        <div class="row g-1 mb-3">
+                            @foreach([['label'=>'TD','val'=>$vs['blood_pressure']??null,'unit'=>'mmHg'],['label'=>'Nadi','val'=>$vs['heart_rate']??null,'unit'=>'/menit'],['label'=>'Suhu','val'=>$vs['temperature']??null,'unit'=>'°C'],['label'=>'RR','val'=>$vs['respiratory_rate']??null,'unit'=>'/menit'],['label'=>'SpO₂','val'=>$vs['oxygen_saturation']??null,'unit'=>'%'],['label'=>'GDS','val'=>$vs['blood_glucose']??null,'unit'=>'mg/dL']] as $v)
+                                <div class="col-4 col-md-2">
+                                    <div class="border rounded p-1 text-center small">
+                                        <div class="text-muted">{{ $v['label'] }}</div>
+                                        <strong>{{ $v['val'] ?? '-' }}</strong>
+                                        @if($v['val'])<small class="text-muted">{{ $v['unit'] }}</small>@endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                        @if(!empty($vs['notes']))
+                            <div class="small text-muted mb-2"><strong>Catatan TTV:</strong> {{ $vs['notes'] }}</div>
+                        @endif
+                    @endif
+                    @if($mr->objective_finding)
+                        <h6 class="text-muted small">Pemeriksaan Fisik Umum</h6>
+                        <p>{{ $mr->objective_finding }}</p>
+                    @endif
+                    @if($mr->physical_exam)
+                        <h6 class="text-muted small">Pemeriksaan Fisik Detail</h6>
+                        <p>{{ $mr->physical_exam }}</p>
+                    @endif
+                    @if(!$mr->objective_finding && !$mr->physical_exam)
+                        <p class="text-muted mb-0">-</p>
+                    @endif
+                </div>
+            </div>
+
+            {{-- A: Assessment --}}
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white"><h6 class="mb-0">A — Assessment</h6></div>
+                <div class="card-body">
+                    @if($mr->assessment)
+                        <h6 class="text-muted small">Assessment</h6>
+                        <p>{{ $mr->assessment }}</p>
+                    @endif
+                    @if($mr->differential_diagnosis)
+                        <h6 class="text-muted small">Diagnosis Banding</h6>
+                        <p>{{ $mr->differential_diagnosis }}</p>
+                    @endif
+
+                    @php
+                        $allDiags = $mr->diagnoses()->with('icd10Diagnosis')->orderBy('type')->orderBy('order')->get();
+                        $primaryDiag = $allDiags->where('type', 'primary')->first();
+                        $secondaryDiags = $allDiags->where('type', 'secondary');
+                        $procedures = $mr->procedures()->with('icd9CmDiagnosis')->orderBy('order')->get();
+                    @endphp
+
+                    @if($primaryDiag || $mr->diagnosis_primary)
+                        <h6 class="text-muted small">Diagnosis Utama</h6>
+                        <p>
+                            @if($primaryDiag)
+                                <span class="badge bg-info me-1">{{ $primaryDiag->icd10Diagnosis->code }}</span>
+                                <strong>{{ $primaryDiag->icd10Diagnosis->name }}</strong>
+                            @else
+                                <strong>{{ $mr->diagnosis_primary }}</strong>
+                            @endif
+                        </p>
+                    @endif
+
+                    @if($secondaryDiags->isNotEmpty())
+                        <h6 class="text-muted small">Diagnosis Sekunder</h6>
+                        <p>
+                            @foreach($secondaryDiags as $sd)
+                                <span class="badge bg-secondary me-1">{{ $sd->icd10Diagnosis->code ?? '#' . $sd->id }}</span>
+                            @endforeach
+                        </p>
+                    @endif
+                </div>
+            </div>
+
+            {{-- Specialist Data --}}
+            @if(isset($specialistPartial) && $specialistPartial && $mr->specialist_data)
+                @php
+                    $sd = $mr->specialist_data;
+                    $code = $mr->polyclinic?->code;
+                @endphp
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-header bg-white"><h6 class="mb-0"><i class="fas fa-microscope me-1 text-primary"></i>Pemeriksaan Spesialis ({{ $mr->polyclinic?->name }})</h6></div>
+                    <div class="card-body">
+                        @if($code === 'PDL')
+                            @foreach(['kardiovaskuler'=>'Kardiovaskuler','respirasi'=>'Respirasi','gastrointestinal'=>'Gastrointestinal','hepatobilier'=>'Hepatobilier','renal'=>'Renal / Urologi','endokrin'=>'Endokrin & Metabolik','muskuloskeletal'=>'Muskuloskeletal','imunologi'=>'Imunologi / Alergi','hematologi'=>'Hematologi','infeksi'=>'Infeksi','neurologi'=>'Neurologi'] as $key => $label)
+                                @if(!empty($sd[$key]))
+                                    <h6 class="text-muted small">{{ $label }}</h6>
+                                    <p>{{ $sd[$key] }}</p>
+                                @endif
+                            @endforeach
+                            @if(!empty($sd['fisik']))
+                                <h6 class="text-muted small">Pemeriksaan Fisik</h6>
+                                @foreach(['kesadaran'=>'Kesadaran','td'=>'TD','nadi'=>'Nadi','suhu'=>'Suhu','rr'=>'RR','thoraks'=>'Thoraks','abdomen'=>'Abdomen','ekstremitas'=>'Ekstremitas'] as $key => $label)
+                                    @if(!empty($sd['fisik'][$key]))
+                                        <p><strong>{{ $label }}:</strong> {{ $sd['fisik'][$key] }}</p>
+                                    @endif
+                                @endforeach
+                            @endif
+
+                        @elseif($code === 'ANAK')
+                            @if(!empty($sd['perinatal']))
+                                <h6 class="text-muted small">Riwayat Perinatal</h6>
+                                @foreach(['usia_kehamilan'=>'Usia Kehamilan','persalinan'=>'Cara Persalinan','bb_lahir'=>'BB Lahir','pb_lahir'=>'PB Lahir','asi'=>'ASI Eksklusif'] as $key => $label)
+                                    @if(!empty($sd['perinatal'][$key]))
+                                        <p><strong>{{ $label }}:</strong> {{ $sd['perinatal'][$key] }}</p>
+                                    @endif
+                                @endforeach
+                            @endif
+                            @if(!empty($sd['imunisasi']))
+                                <h6 class="text-muted small">Imunisasi</h6>
+                                <p>{{ is_array($sd['imunisasi']) ? implode(', ', array_keys(array_filter($sd['imunisasi']))) : $sd['imunisasi'] }}</p>
+                            @endif
+                            @if(!empty($sd['tumbuh_kembang']))
+                                <h6 class="text-muted small">Tumbuh Kembang</h6>
+                                @foreach(['motorik_kasar'=>'Motorik Kasar','motorik_halus'=>'Motorik Halus','bicara'=>'Bicara / Bahasa','sosial'=>'Sosial & Kemandirian'] as $key => $label)
+                                    @if(!empty($sd['tumbuh_kembang'][$key]))
+                                        <p><strong>{{ $label }}:</strong> {{ $sd['tumbuh_kembang'][$key] }}</p>
+                                    @endif
+                                @endforeach
+                            @endif
+                            @if(!empty($sd['antropometri']))
+                                <h6 class="text-muted small">Antropometri</h6>
+                                @foreach(['bb'=>'BB','tb'=>'TB','lk'=>'LK','lila'=>'LILA','status_gizi'=>'Status Gizi'] as $key => $label)
+                                    @if(!empty($sd['antropometri'][$key]))
+                                        <p><strong>{{ $label }}:</strong> {{ $sd['antropometri'][$key] }}</p>
+                                    @endif
+                                @endforeach
+                            @endif
+
+                        @elseif($code === 'SARAF')
+                            @if(!empty($sd['nervus_cranialis']))
+                                <h6 class="text-muted small">Nervus Cranialis</h6>
+                                @foreach(range(1,12) as $n)
+                                    @php $key = 'n'.$n; @endphp
+                                    @if(!empty($sd['nervus_cranialis'][$key]['status']))
+                                        <p><strong>N. {{ $n }}:</strong> {{ $sd['nervus_cranialis'][$key]['status'] }}
+                                        @if(!empty($sd['nervus_cranialis'][$key]['notes']))
+                                            <span class="text-muted">— {{ $sd['nervus_cranialis'][$key]['notes'] }}</span>
+                                        @endif
+                                        </p>
+                                    @endif
+                                @endforeach
+                            @endif
+                            @if(!empty($sd['mrc']))
+                                <h6 class="text-muted small">MRC Scale</h6>
+                                @php $mrcLabels = ['superior_kanan'=>'Ekstremitas Superior Kanan','superior_kiri'=>'Ekstremitas Superior Kiri','inferior_kanan'=>'Ekstremitas Inferior Kanan','inferior_kiri'=>'Ekstremitas Inferior Kiri']; @endphp
+                                @foreach($mrcLabels as $key => $label)
+                                    @if(!empty($sd['mrc'][$key]))
+                                        <p><strong>{{ $label }}:</strong> {{ $sd['mrc'][$key] }}</p>
+                                    @endif
+                                @endforeach
+                            @endif
+                            @if(!empty($sd['sensori']))
+                                <h6 class="text-muted small">Pemeriksaan Sensorik</h6>
+                                <p>{{ $sd['sensori'] }}</p>
+                            @endif
+                            @if(!empty($sd['refleks']))
+                                <h6 class="text-muted small">Refleks</h6>
+                                <p>{{ $sd['refleks'] }}</p>
+                            @endif
+                            @if(!empty($sd['koordinasi']))
+                                <h6 class="text-muted small">Koordinasi & Keseimbangan</h6>
+                                <p>{{ $sd['koordinasi'] }}</p>
+                            @endif
+
+                        @elseif($code === 'RAD')
+                            @if(!empty($sd['indikasi']))
+                                <h6 class="text-muted small">Indikasi</h6>
+                                <p>{{ $sd['indikasi'] }}</p>
+                            @endif
+                            @if(!empty($sd['riwayat']))
+                                <h6 class="text-muted small">Riwayat</h6>
+                                <p>{{ $sd['riwayat'] }}</p>
+                            @endif
+                            @if(!empty($sd['jenis']))
+                                <h6 class="text-muted small">Jenis Pemeriksaan</h6>
+                                <p>
+                                    @if(!empty($sd['jenis']['modalitas']))<strong>Modalitas:</strong> {{ $sd['jenis']['modalitas'] }}<br>@endif
+                                    @if(!empty($sd['jenis']['region']))<strong>Region:</strong> {{ $sd['jenis']['region'] }}<br>@endif
+                                    @if(!empty($sd['jenis']['proyeksi']))<strong>Proyeksi:</strong> {{ $sd['jenis']['proyeksi'] }}<br>@endif
+                                    @if(!empty($sd['jenis']['kontras']))<strong>Kontras:</strong> {{ $sd['jenis']['kontras'] }}<br>@endif
+                                </p>
+                            @endif
+                            @if(!empty($sd['temuan']))
+                                <h6 class="text-muted small">Temuan</h6>
+                                @if(!empty($sd['temuan']['deskripsi']))<p>{{ $sd['temuan']['deskripsi'] }}</p>@endif
+                                @if(!empty($sd['temuan']['kesan']))<p><strong>Kesan:</strong> {{ $sd['temuan']['kesan'] }}</p>@endif
+                                @if(!empty($sd['temuan']['kategori']))<p><strong>Kategori:</strong> {{ $sd['temuan']['kategori'] }}</p>@endif
+                                @if(!empty($sd['temuan']['kesimpulan']))<p><strong>Kesimpulan:</strong> {{ $sd['temuan']['kesimpulan'] }}</p>@endif
+                                @if(!empty($sd['temuan']['rekomendasi']))<p><strong>Rekomendasi:</strong> {{ $sd['temuan']['rekomendasi'] }}</p>@endif
+                            @endif
+
+                        @elseif($code === 'GIG')
+                            @if(!empty($sd['odontogram']))
+                                <h6 class="text-muted small">Odontogram</h6>
+                                @php
+                                    $odo = is_string($sd['odontogram']) ? json_decode($sd['odontogram'], true) : $sd['odontogram'];
+                                    $statusLabels = ['utuh'=>'Utuh','karies'=>'Karies','tambalan'=>'Tambalan','ekstraksi'=>'Ekstraksi','mahkota'=>'Mahkota'];
+                                    $grouped = [];
+                                    if(is_array($odo)) {
+                                        foreach($odo as $num => $st) {
+                                            $grouped[$st][] = $num;
+                                        }
+                                    }
+                                @endphp
+                                @foreach($statusLabels as $st => $label)
+                                    @if(!empty($grouped[$st]))
+                                        <p><strong>{{ $label }}:</strong> {{ implode(', ', $grouped[$st]) }}</p>
+                                    @endif
+                                @endforeach
+                            @endif
+                            @if(!empty($sd['periodontal']))
+                                <h6 class="text-muted small">Periodontal</h6>
+                                @if(!empty($sd['periodontal']['gingiva']))<p><strong>Gingiva:</strong> {{ $sd['periodontal']['gingiva'] }}</p>@endif
+                                @if(!empty($sd['periodontal']['poket']))<p><strong>Kedalaman Poket:</strong> {{ $sd['periodontal']['poket'] }}</p>@endif
+                                @if(!empty($sd['periodontal']['kalkulus']))<p><strong>Kalkulus:</strong> {{ $sd['periodontal']['kalkulus'] }}</p>@endif
+                                @if(!empty($sd['periodontal']['mobilitas']))<p><strong>Mobilitas:</strong> {{ $sd['periodontal']['mobilitas'] }}</p>@endif
+                            @endif
+                            @if(!empty($sd['mukosa']))
+                                <h6 class="text-muted small">Mukosa & Jaringan Lunak</h6>
+                                @if(!empty($sd['mukosa']['oral']))<p><strong>Mukosa Oral:</strong> {{ $sd['mukosa']['oral'] }}</p>@endif
+                                @if(!empty($sd['mukosa']['lidah']))<p><strong>Lidah:</strong> {{ $sd['mukosa']['lidah'] }}</p>@endif
+                                @if(!empty($sd['mukosa']['tonsil']))<p><strong>Tonsil & Faring:</strong> {{ $sd['mukosa']['tonsil'] }}</p>@endif
+                            @endif
+                            @if(!empty($sd['kebersihan']))
+                                <h6 class="text-muted small">Kebersihan Mulut</h6>
+                                @if(!empty($sd['kebersihan']['ohis']))<p><strong>OHI-S:</strong> {{ $sd['kebersihan']['ohis'] }}</p>@endif
+                                @if(!empty($sd['kebersihan']['dmft']))<p><strong>DMFT:</strong> {{ $sd['kebersihan']['dmft'] }}</p>@endif
+                            @endif
+                            @if(!empty($sd['tindakan']))
+                                <h6 class="text-muted small">Tindakan</h6>
+                                @if(!empty($sd['tindakan']['rencana']))<p><strong>Rencana:</strong> {{ $sd['tindakan']['rencana'] }}</p>@endif
+                                @if(!empty($sd['tindakan']['gigi']))<p><strong>Gigi:</strong> {{ $sd['tindakan']['gigi'] }}</p>@endif
+                                @if(!empty($sd['tindakan']['anestesi']))<p><strong>Anestesi:</strong> {{ $sd['tindakan']['anestesi'] }}</p>@endif
+                            @endif
+                        @endif
+                    </div>
+                </div>
+            @endif
+
+            {{-- Tindakan --}}
+            @if($procedures->isNotEmpty())
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white"><h6 class="mb-0">Prosedur / Tindakan</h6></div>
+                <div class="card-body p-0">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr><th>Kode</th><th>Nama Tindakan</th><th>Catatan</th><th>Status</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach($procedures as $proc)
+                                <tr>
+                                    <td><span class="badge bg-warning text-dark">{{ $proc->icd9CmDiagnosis->code }}</span></td>
+                                    <td>{{ $proc->icd9CmDiagnosis->name }}</td>
+                                    <td class="text-muted">{{ $proc->notes ?? '-' }}</td>
+                                    <td>
+                                        @php
+                                            $pStatus = match($proc->status) { 'planned'=>'bg-secondary','done'=>'bg-success','cancelled'=>'bg-danger','deferred'=>'bg-warning', default=>'bg-secondary' };
+                                        @endphp
+                                        <span class="badge {{ $pStatus }}">{{ $proc->status ?? 'planned' }}</span>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
+
+            {{-- P: Plan --}}
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white"><h6 class="mb-0">P — Plan</h6></div>
+                <div class="card-body">
+                    @if($mr->plan)
+                        <p>{{ $mr->plan }}</p>
+                    @else
+                        <p class="text-muted mb-0">-</p>
+                    @endif
+                    @if($mr->follow_up_date)
+                        <div class="small text-muted"><strong>Follow-up:</strong> {{ $mr->follow_up_date->format('d/m/Y') }}</div>
+                    @endif
+                </div>
+            </div>
+
+            @if($mr->notes)
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white"><h6 class="mb-0">Catatan</h6></div>
+                <div class="card-body"><p class="mb-0">{{ $mr->notes }}</p></div>
+            </div>
+            @endif
+
+            {{-- Resep --}}
+            @if($mr->prescriptions->count())
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white"><h6 class="mb-0">Resep</h6></div>
+                <div class="card-body p-0">
+                    <table class="table table-striped mb-0">
+                        <thead><tr><th>No. Resep</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead>
+                        <tbody>
+                            @foreach($mr->prescriptions as $prescription)
+                                <tr>
+                                    <td>{{ $prescription->prescription_number }}</td>
+                                    <td>{{ $prescription->prescription_date?->format('d/m/Y') }}</td>
+                                    <td>
+                                        @php
+                                            $pBadge = match($prescription->status) { 'active'=>'bg-success', 'dispensed'=>'bg-info', 'cancelled'=>'bg-secondary', default=>'bg-warning' };
+                                            $pLabel = match($prescription->status) { 'active'=>'Aktif', 'dispensed'=>'Diberikan', 'cancelled'=>'Dibatalkan', default=>$prescription->status };
+                                        @endphp
+                                        <span class="badge {{ $pBadge }}">{{ $pLabel }}</span>
+                                    </td>
+                                    <td><a href="{{ route('prescriptions.show', $prescription) }}" class="btn btn-sm btn-info">Detail</a></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
+
+            {{-- Edukasi --}}
+            @if($education)
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white"><h6 class="mb-0">Edukasi Pasien</h6></div>
+                <div class="card-body">
+                    <table class="table table-sm mb-0">
+                        @if($education->diagnosis_explained)<tr><td class="text-muted">Diagnosis</td><td>{{ $education->diagnosis_explained }}</td></tr>@endif
+                        @if($education->medication_instructions)<tr><td class="text-muted">Obat</td><td>{{ $education->medication_instructions }}</td></tr>@endif
+                        @if($education->diet_instructions)<tr><td class="text-muted">Diet</td><td>{{ $education->diet_instructions }}</td></tr>@endif
+                        @if($education->activity_instructions)<tr><td class="text-muted">Aktivitas</td><td>{{ $education->activity_instructions }}</td></tr>@endif
+                        @if($education->follow_up_plan)<tr><td class="text-muted">Kontrol</td><td>{{ $education->follow_up_plan }}</td></tr>@endif
+                    </table>
+                    <div class="text-muted small mt-2">
+                        <i class="fas fa-user-md me-1"></i>{{ $education->educator?->name ?? '-' }}
+                        &middot; {{ $education->education_date?->format('d/m/Y') }}
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            {{-- Resume --}}
+            @if($summary)
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white"><h6 class="mb-0">Resume Kunjungan</h6></div>
+                <div class="card-body">
+                    <table class="table table-sm mb-0">
+                        @if($summary->final_diagnosis)<tr><td class="text-muted" style="width:140px">Diagnosis Akhir</td><td><strong>{{ $summary->final_diagnosis }}</strong></td></tr>@endif
+                        @if($summary->discharge_status)<tr><td class="text-muted">Status Pulang</td><td>{{ $summary->discharge_status }}</td></tr>@endif
+                        @if($summary->follow_up_plan)<tr><td class="text-muted">Rencana Kontrol</td><td>{{ $summary->follow_up_plan }}</td></tr>@endif
+                        @if($summary->sick_leave_days)<tr><td class="text-muted">Cuti Sakit</td><td>{{ $summary->sick_leave_days }} hari ({{ $summary->sick_leave_from?->format('d/m/Y') }} — {{ $summary->sick_leave_to?->format('d/m/Y') }})</td></tr>@endif
+                        @if($summary->referral_to)<tr><td class="text-muted">Rujukan</td><td>{{ $summary->referral_to }} — {{ $summary->referral_notes }}</td></tr>@endif
+                    </table>
+                    <div class="mt-2 d-flex gap-1">
+                        <a href="{{ route('visit-summary.show', $summary) }}" class="btn btn-sm btn-outline-info">Detail</a>
+                        <a href="{{ route('letters.sick-leave', $reg) }}" target="_blank" class="btn btn-sm btn-outline-danger">Surat Sakit</a>
+                        <a href="{{ route('letters.health-certificate', $reg) }}" target="_blank" class="btn btn-sm btn-outline-success">Surat Sehat</a>
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            {{-- Berkas --}}
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-paperclip me-1 text-primary"></i>Berkas</h6>
+                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                        <i class="fas fa-upload me-1"></i>Upload
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    @php $files = $mr->attachments ?? collect(); @endphp
+                    @if($files->count())
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Nama File</th>
+                                        <th>Kategori</th>
+                                        <th>Ukuran</th>
+                                        <th>Tgl</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($files as $file)
+                                        <tr>
+                                            <td><i class="fas {{ match($file->file_type) { 'image/jpeg','image/png','image/gif' => 'fa-image text-success', 'application/pdf' => 'fa-file-pdf text-danger', default => 'fa-file text-muted' } }} me-1"></i>{{ $file->file_name }}</td>
+                                            <td>
+                                                @php
+                                                    $catBadge = match($file->category) { 'lab_result'=>'bg-info', 'xray'=>'bg-warning', 'photo'=>'bg-success', default=>'bg-secondary' };
+                                                    $catLabel = match($file->category) { 'lab_result'=>'Lab', 'xray'=>'Radiologi', 'photo'=>'Foto', default=>'Lain' };
+                                                @endphp
+                                                <span class="badge {{ $catBadge }}">{{ $catLabel }}</span>
+                                            </td>
+                                            <td class="small">{{ $file->file_size > 1048576 ? round($file->file_size/1048576,1).' MB' : ($file->file_size > 1024 ? round($file->file_size/1024,1).' KB' : ($file->file_size ?? '-').' B') }}</td>
+                                            <td class="small text-muted">{{ $file->created_at?->format('d/m/Y') }}</td>
+                                            <td>
+                                                <div class="d-flex gap-1">
+                                                    <a href="{{ route('attachments.download', $file) }}" class="btn btn-sm btn-outline-info" title="Download"><i class="fas fa-download"></i></a>
+                                                    <form method="POST" action="{{ route('attachments.destroy', $file) }}" onsubmit="return confirm('Hapus berkas ini?')">@csrf @method('DELETE')
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus"><i class="fas fa-trash"></i></button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-paperclip fa-2x mb-2 d-block"></i>
+                            Belum ada berkas diunggah
                         </div>
                     @endif
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm mt-3">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0">Anamnesis & Pemeriksaan</h6>
+            {{-- Modal Upload --}}
+            <div class="modal fade" id="uploadModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <form method="POST" action="{{ route('attachments.store', $mr) }}" enctype="multipart/form-data" class="modal-content">
+                        @csrf
+                        <div class="modal-header">
+                            <h5 class="modal-title">Upload Berkas</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">File <span class="text-danger">*</span></label>
+                                <input type="file" name="file" class="form-control @error('file') is-invalid @enderror" required>
+                                <small class="text-muted">Format: JPG, PNG, GIF, PDF, DOC, DOCX. Maks 10 MB.</small>
+                                @error('file') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Kategori</label>
+                                <select name="category" class="form-select">
+                                    <option value="other">Lainnya</option>
+                                    <option value="lab_result">Hasil Lab</option>
+                                    <option value="photo">Foto</option>
+                                    <option value="xray">Radiologi</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-primary">Upload</button>
+                        </div>
+                    </form>
                 </div>
-                <div class="card-body">
-                    @if($medicalRecord->anamnesis)
-                        <h6 class="text-muted small">Anamnesis / Subjective</h6>
-                        <p>{{ $medicalRecord->anamnesis }}</p>
-                    @endif
-                    @if($medicalRecord->subjective_complaint)
-                        <h6 class="text-muted small">Keluhan Utama</h6>
-                        <p>{{ $medicalRecord->subjective_complaint }}</p>
-                    @endif
-                    @if($medicalRecord->objective_finding)
-                        <h6 class="text-muted small">Pemeriksaan Fisik / Objective</h6>
-                        <p>{{ $medicalRecord->objective_finding }}</p>
-                    @endif
-                    @if($medicalRecord->physical_exam)
-                        <h6 class="text-muted small">Pemeriksaan Fisik Detail</h6>
-                        <p>{{ $medicalRecord->physical_exam }}</p>
-                    @endif
-                </div>
-            </div>
-
-            @php
-                $allDiags = $medicalRecord->diagnoses()->with('icd10Diagnosis')->orderBy('type')->orderBy('order')->get();
-                $primaryDiag = $allDiags->where('type', 'primary')->first();
-                $secondaryDiags = $allDiags->where('type', 'secondary');
-                $procedures = $medicalRecord->procedures()->with('icd9CmDiagnosis')->orderBy('order')->get();
-            @endphp
-
-            <div class="card border-0 shadow-sm mt-3">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0">Diagnosis</h6>
-                </div>
-                <div class="card-body">
-                    <table class="table table-sm mb-0">
-                        <tr>
-                            <td class="text-muted" style="width:140px">Diagnosis Utama</td>
-                            <td>
-                                @if($primaryDiag)
-                                    <strong>
-                                        <span class="badge bg-info me-1">{{ $primaryDiag->icd10Diagnosis->code }}</span>
-                                        {{ $primaryDiag->icd10Diagnosis->name }}
-                                    </strong>
-                                @elseif($medicalRecord->diagnosis_primary)
-                                    <strong>{{ $medicalRecord->diagnosis_primary }}</strong>
-                                @else
-                                    <span class="text-muted">-</span>
-                                @endif
-                            </td>
-                        </tr>
-                        @if($secondaryDiags->isNotEmpty())
-                            <tr>
-                                <td class="text-muted">Diagnosis Sekunder</td>
-                                <td>
-                                    @foreach($secondaryDiags as $sd)
-                                        <span class="badge bg-secondary me-1" title="{{ $sd->icd10Diagnosis->name ?? '' }}">
-                                            {{ $sd->icd10Diagnosis->code ?? '#' . $sd->id }}
-                                        </span>
-                                    @endforeach
-                                    @if($medicalRecord->diagnosis_secondary)
-                                        @foreach((array)$medicalRecord->diagnosis_secondary as $code)
-                                            @if(is_string($code))
-                                                <span class="badge bg-light text-dark me-1">{{ $code }}</span>
-                                            @endif
-                                        @endforeach
-                                    @endif
-                                </td>
-                            </tr>
-                        @elseif($medicalRecord->diagnosis_secondary)
-                            <tr>
-                                <td class="text-muted">Diagnosis Sekunder</td>
-                                <td>
-                                    @foreach((array)$medicalRecord->diagnosis_secondary as $diag)
-                                        <span class="badge bg-secondary me-1">{{ $diag }}</span>
-                                    @endforeach
-                                </td>
-                            </tr>
-                        @endif
-                    </table>
-                </div>
-            </div>
-
-            @if($procedures->isNotEmpty())
-                <div class="card border-0 shadow-sm mt-3">
-                    <div class="card-header bg-white">
-                        <h6 class="mb-0">Prosedur / Tindakan</h6>
-                    </div>
-                    <div class="card-body p-0">
-                        <table class="table table-sm mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Kode</th>
-                                    <th>Nama Tindakan</th>
-                                    <th>Catatan</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($procedures as $proc)
-                                    <tr>
-                                        <td><span class="badge bg-warning text-dark">{{ $proc->icd9CmDiagnosis->code }}</span></td>
-                                        <td>{{ $proc->icd9CmDiagnosis->name }}</td>
-                                        <td class="text-muted">{{ $proc->notes ?? '-' }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            @endif
-
-            @if($medicalRecord->assessment)
-                <div class="card border-0 shadow-sm mt-3">
-                    <div class="card-header bg-white"><h6 class="mb-0">Assessment</h6></div>
-                    <div class="card-body"><p class="mb-0">{{ $medicalRecord->assessment }}</p></div>
-                </div>
-            @endif
-
-            @if($medicalRecord->plan)
-                <div class="card border-0 shadow-sm mt-3">
-                    <div class="card-header bg-white"><h6 class="mb-0">Plan / Rencana</h6></div>
-                    <div class="card-body"><p class="mb-0">{{ $medicalRecord->plan }}</p></div>
-                </div>
-            @endif
-
-            @if($medicalRecord->notes)
-                <div class="card border-0 shadow-sm mt-3">
-                    <div class="card-header bg-white"><h6 class="mb-0">Catatan</h6></div>
-                    <div class="card-body"><p class="mb-0">{{ $medicalRecord->notes }}</p></div>
-                </div>
-            @endif
-
-            @if($medicalRecord->prescriptions->count())
-                <div class="card border-0 shadow-sm mt-3">
-                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0">Resep</h6>
-                    </div>
-                    <div class="card-body p-0">
-                        <table class="table table-striped mb-0">
-                            <thead>
-                                <tr>
-                                    <th>No. Resep</th>
-                                    <th>Tanggal</th>
-                                    <th>Status</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($medicalRecord->prescriptions as $prescription)
-                                    <tr>
-                                        <td>{{ $prescription->prescription_number }}</td>
-                                        <td>{{ $prescription->prescription_date?->format('d/m/Y') }}</td>
-                                        <td>
-                                            @php
-                                                $pBadge = match($prescription->status) {
-                                                    'active' => 'bg-success', 'dispensed' => 'bg-info',
-                                                    'cancelled' => 'bg-secondary', default => 'bg-warning'
-                                                };
-                                                $pLabel = match($prescription->status) {
-                                                    'active' => 'Aktif', 'dispensed' => 'Diberikan',
-                                                    'cancelled' => 'Dibatalkan', default => $prescription->status
-                                                };
-                                            @endphp
-                                            <span class="badge {{ $pBadge }}">{{ $pLabel }}</span>
-                                        </td>
-                                        <td>
-                                            <a href="{{ route('prescriptions.show', $prescription) }}" class="btn btn-sm btn-info">Detail</a>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            @endif
-
-            <div class="d-flex gap-2 mt-3">
-                <a href="{{ route('prescriptions.create', ['medical_record_id' => $medicalRecord->id]) }}" class="btn btn-primary">Buat Resep</a>
             </div>
         </div>
     </div>

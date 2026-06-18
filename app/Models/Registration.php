@@ -71,19 +71,19 @@ class Registration extends Model
         return $this->hasMany(MedicalRecord::class, 'registration_id');
     }
 
-    public function prescriptions(): HasMany
-    {
-        return $this->hasMany(Prescription::class, 'registration_id');
-    }
-
-    public function labRequests(): HasMany
-    {
-        return $this->hasMany(LabRequest::class, 'registration_id');
-    }
-
     public function bpjsAntrean(): BelongsTo
     {
         return $this->belongsTo(BpjsAntrean::class, 'bpjs_antrian_id', 'id');
+    }
+
+    public function triage(): HasOne
+    {
+        return $this->hasOne(Triage::class, 'registration_id');
+    }
+
+    public function summary(): HasOne
+    {
+        return $this->hasOne(VisitSummary::class, 'registration_id');
     }
 
     public static function calculateAge(Carbon $birthDate, Carbon $asOf): array

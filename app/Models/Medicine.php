@@ -25,6 +25,8 @@ class Medicine extends Model
         'is_generic',
         'requires_prescription',
         'is_active',
+        'kfa_code',
+        'kfa_name',
     ];
 
     protected function casts(): array

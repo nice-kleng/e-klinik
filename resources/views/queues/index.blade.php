@@ -16,6 +16,7 @@
                     <label class="form-label">Tanggal</label>
                     <input type="date" name="date" class="form-control" value="{{ $date }}">
                 </div>
+                @if (auth()->user()->hasRole('admin') || auth()->user()->hasRole('superadmin'))
                 <div class="col-md-3">
                     <label class="form-label">Poliklinik</label>
                     <select name="polyclinic_id" class="form-select">
@@ -25,6 +26,7 @@
                         @endforeach
                     </select>
                 </div>
+                @endif
                 <div class="col-md-2">
                     <label class="form-label">Status</label>
                     <select name="status" class="form-select">
@@ -57,13 +59,19 @@
                         <th>Poliklinik</th>
                         <th>Dokter</th>
                         <th>Sumber</th>
+                        <th>Triage</th>
                         <th>Status</th>
-                        <th width="280">Aksi</th>
+                        <th width="320">Aksi</th>
                     </tr>
                 </thead>
                 <tbody id="queueTableBody">
                     @forelse($queues as $queue)
-                        @php $reg = $queue->registration; @endphp
+                        @php
+                            $reg = $queue->registration;
+                            $triage = $reg?->triage;
+                            $isReceptionist = auth()->user()->hasRole('receptionist');
+                            $canTriage = auth()->user()->hasAnyRole(['admin', 'receptionist', 'nurse']);
+                        @endphp
                         <tr data-queue-id="{{ $queue->id }}" data-status="{{ $queue->status }}">
                             <td><strong>{{ $queue->queue_number }}</strong></td>
                             <td>{{ $reg?->patient?->name ?? '-' }}</td>
@@ -73,6 +81,18 @@
                                 <span class="badge bg-{{ $queue->source == 'mjkn' ? 'primary' : 'secondary' }}">
                                     {{ $queue->source }}
                                 </span>
+                            </td>
+                            <td>
+                                @if($triage)
+                                    <span class="badge bg-success" title="Triage selesai">Sudah</span>
+                                @else
+                                    <span class="badge bg-danger" title="Belum triage">Belum</span>
+                                    @if($canTriage && in_array($queue->status, ['waiting']))
+                                        <a href="{{ route('triage.create', $reg) }}" class="btn btn-sm btn-outline-primary ms-1">
+                                            <i class="fas fa-stethoscope"></i>
+                                        </a>
+                                    @endif
+                                @endif
                             </td>
                             <td>
                                 @php
@@ -96,11 +116,9 @@
                                 <span class="badge {{ $statusBadge }}">{{ $statusLabel }}</span>
                             </td>
                             <td>
-                                @php $isReceptionist = auth()->user()->hasRole('receptionist'); @endphp
-
                                 @if(in_array($queue->status, ['waiting', 'called']))
                                     @if($queue->status == 'waiting')
-                                        <button class="btn btn-sm btn-info btn-call" data-queue-id="{{ $queue->id }}" data-url="{{ route('queues.call-ajax', $queue) }}">Panggil</button>
+                                        <button class="btn btn-sm btn-info btn-call" data-queue-id="{{ $queue->id }}" data-url="{{ route('queues.call-ajax', $queue) }}" {{ !$triage ? 'disabled' : '' }}>Panggil</button>
                                     @endif
                                     @unless($isReceptionist)
                                     <button class="btn btn-sm btn-primary btn-process" data-queue-id="{{ $queue->id }}" data-url="{{ route('queues.in-progress', $queue) }}">Proses</button>
@@ -122,7 +140,7 @@
                         </tr>
                     @empty
                         <tr id="emptyRow">
-                            <td colspan="7" class="text-center text-muted py-4">Tidak ada antrean</td>
+                            <td colspan="8" class="text-center text-muted py-4">Tidak ada antrean</td>
                         </tr>
                     @endforelse
                 </tbody>

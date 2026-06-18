@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class MedicalRecord extends Model
@@ -29,10 +30,14 @@ class MedicalRecord extends Model
         'diagnosis_primary',
         'diagnosis_secondary',
         'anamnesis',
+        'past_history',
+        'medication_history',
         'physical_exam',
+        'differential_diagnosis',
         'vital_signs',
         'notes',
         'follow_up_date',
+        'specialist_data',
         'created_by',
     ];
 
@@ -42,6 +47,7 @@ class MedicalRecord extends Model
             'visit_date' => 'date',
             'diagnosis_secondary' => 'array',
             'vital_signs' => 'array',
+            'specialist_data' => 'array',
             'follow_up_date' => 'date',
         ];
     }
@@ -114,5 +120,10 @@ class MedicalRecord extends Model
     public function procedures(): HasMany
     {
         return $this->hasMany(MedicalRecordProcedure::class)->orderBy('order');
+    }
+
+    public function education(): HasOne
+    {
+        return $this->hasOne(PatientEducation::class, 'medical_record_id');
     }
 }

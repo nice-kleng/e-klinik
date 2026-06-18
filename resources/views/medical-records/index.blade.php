@@ -15,7 +15,8 @@
                     <label class="form-label">Tanggal</label>
                     <input type="date" name="date" class="form-control" value="{{ $date }}">
                 </div>
-                <div class="col-md-4">
+                @if (auth()->user()->hasRole('admin') || auth()->user()->hasRole('superadmin'))
+                    <div class="col-md-4">
                     <label class="form-label">Poliklinik</label>
                     <select name="polyclinic_id" class="form-select">
                         <option value="">Semua Poli</option>
@@ -24,9 +25,10 @@
                         @endforeach
                     </select>
                 </div>
+                @endif
                 <div class="col-md-4">
-                    <button class="btn btn-primary w-100" type="submit">Filter</button>
-                    <a href="{{ route('medical-records.index') }}" class="btn btn-outline-secondary w-100 mt-1">Reset</a>
+                    <button class="btn btn-primary" type="submit">Filter</button>
+                    <a href="{{ route('medical-records.index') }}" class="btn btn-outline-secondary mt-1">Reset</a>
                 </div>
             </form>
         </div>
@@ -57,8 +59,10 @@
                             <td>{{ $reg?->doctor?->name ?? '-' }}</td>
                             <td>{{ $queue->queue_date?->format('d/m/Y') }}</td>
                             <td>
-                                @if($mr && $mr->diagnosis_primary)
-                                    <span class="badge bg-info">{{ $mr->diagnosis_primary }}</span>
+                                @if($mr && $mr->primaryDiagnosis)
+                                    @foreach($mr->primaryDiagnosis as $diag)
+                                        <span class="badge bg-info">{{ $diag->icd10Diagnosis->name }}</span>
+                                    @endforeach
                                 @else
                                     <span class="text-muted">-</span>
                                 @endif

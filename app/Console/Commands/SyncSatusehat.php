@@ -2,23 +2,29 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Doctor;
 use App\Models\MedicalRecord;
 use App\Models\Patient;
+use App\Models\Polyclinic;
 use App\Services\SatuSehat\ConditionService;
 use App\Services\SatuSehat\EncounterService;
+use App\Services\SatuSehat\LocationService;
 use App\Services\SatuSehat\ObservationService;
 use App\Services\SatuSehat\PatientService;
+use App\Services\SatuSehat\PractitionerService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 class SyncSatusehat extends Command
 {
-    protected $signature = 'satusehat:sync {type? : Type of data to sync (patients, encounters, conditions, all)} {--force : Force sync even if already synced}';
+    protected $signature = 'satusehat:sync {type? : Type of data to sync (patients, practitioners, locations, encounters, conditions, all)} {--force : Force sync even if already synced}';
 
     protected $description = 'Sync local data to Satu Sehat (Kemenkes FHIR)';
 
     protected array $results = [
         'patients' => ['synced' => 0, 'failed' => 0, 'errors' => []],
+        'practitioners' => ['synced' => 0, 'failed' => 0, 'errors' => []],
+        'locations' => ['synced' => 0, 'failed' => 0, 'errors' => []],
         'encounters' => ['synced' => 0, 'failed' => 0, 'errors' => []],
         'conditions' => ['synced' => 0, 'failed' => 0, 'errors' => []],
     ];
@@ -33,6 +39,8 @@ class SyncSatusehat extends Command
 
         match ($type) {
             'patients' => $this->syncPatients($force),
+            'practitioners' => $this->syncPractitioners($force),
+            'locations' => $this->syncLocations($force),
             'encounters' => $this->syncEncounters($force),
             'conditions' => $this->syncConditions($force),
             default => $this->syncAll($force),
@@ -53,6 +61,8 @@ class SyncSatusehat extends Command
     protected function syncAll(bool $force): void
     {
         $this->syncPatients($force);
+        $this->syncLocations($force);
+        $this->syncPractitioners($force);
         $this->syncEncounters($force);
         $this->syncConditions($force);
     }
@@ -103,6 +113,98 @@ class SyncSatusehat extends Command
         $this->output->progressFinish();
     }
 
+    protected function syncPractitioners(bool $force): void
+    {
+        $this->info('Syncing practitioners...');
+
+        $query = Doctor::query();
+
+        if (!$force) {
+            $syncedIds = \App\Models\SatusehatResource::where('model_type', Doctor::class)
+                ->where('resource_type', 'Practitioner')
+                ->where('status', 'synced')
+                ->pluck('model_id');
+
+            $query->whereNotIn('id', $syncedIds);
+        }
+
+        $doctors = $query->get();
+        $total = $doctors->count();
+
+        if ($total === 0) {
+            $this->warn('No practitioners to sync.');
+
+            return;
+        }
+
+        $this->output->progressStart($total);
+        $service = app(PractitionerService::class);
+
+        foreach ($doctors as $doctor) {
+            try {
+                $service->syncPractitioner($doctor);
+                $this->results['practitioners']['synced']++;
+            } catch (\Exception $e) {
+                $this->results['practitioners']['failed']++;
+                $this->results['practitioners']['errors'][] = "Doctor ID {$doctor->id} ({$doctor->name}): {$e->getMessage()}";
+                Log::error('Failed to sync practitioner to Satu Sehat', [
+                    'doctor_id' => $doctor->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            $this->output->progressAdvance();
+        }
+
+        $this->output->progressFinish();
+    }
+
+    protected function syncLocations(bool $force): void
+    {
+        $this->info('Syncing locations...');
+
+        $query = Polyclinic::query();
+
+        if (!$force) {
+            $syncedIds = \App\Models\SatusehatResource::where('model_type', Polyclinic::class)
+                ->where('resource_type', 'Location')
+                ->where('status', 'synced')
+                ->pluck('model_id');
+
+            $query->whereNotIn('id', $syncedIds);
+        }
+
+        $polyclinics = $query->get();
+        $total = $polyclinics->count();
+
+        if ($total === 0) {
+            $this->warn('No locations to sync.');
+
+            return;
+        }
+
+        $this->output->progressStart($total);
+        $service = app(LocationService::class);
+
+        foreach ($polyclinics as $polyclinic) {
+            try {
+                $service->syncLocation($polyclinic);
+                $this->results['locations']['synced']++;
+            } catch (\Exception $e) {
+                $this->results['locations']['failed']++;
+                $this->results['locations']['errors'][] = "Polyclinic ID {$polyclinic->id} ({$polyclinic->name}): {$e->getMessage()}";
+                Log::error('Failed to sync location to Satu Sehat', [
+                    'polyclinic_id' => $polyclinic->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            $this->output->progressAdvance();
+        }
+
+        $this->output->progressFinish();
+    }
+
     protected function syncEncounters(bool $force): void
     {
         $this->info('Syncing encounters...');
@@ -141,6 +243,20 @@ class SyncSatusehat extends Command
                 if (!$patientSynced) {
                     $this->results['encounters']['failed']++;
                     $this->results['encounters']['errors'][] = "MedicalRecord ID {$mr->id}: Patient not synced yet";
+
+                    $this->output->progressAdvance();
+                    continue;
+                }
+
+                $practitionerSynced = \App\Models\SatusehatResource::where('model_type', Doctor::class)
+                    ->where('model_id', $mr->doctor_id)
+                    ->where('resource_type', 'Practitioner')
+                    ->where('status', 'synced')
+                    ->exists();
+
+                if (!$practitionerSynced) {
+                    $this->results['encounters']['failed']++;
+                    $this->results['encounters']['errors'][] = "MedicalRecord ID {$mr->id}: Practitioner not synced yet (Doctor ID {$mr->doctor_id})";
 
                     $this->output->progressAdvance();
                     continue;

@@ -140,7 +140,8 @@ class QueueService
 
     public function callNext(Polyclinic $polyclinic): ?Queue
     {
-        $queue = Queue::where('polyclinic_id', $polyclinic->id)
+        $queue = Queue::with('registration.triage')
+            ->where('polyclinic_id', $polyclinic->id)
             ->whereDate('queue_date', now()->toDateString())
             ->where('status', self::STATUS_WAITING)
             ->orderBy('queue_sequence', 'asc')
@@ -148,6 +149,12 @@ class QueueService
 
         if (!$queue) {
             return null;
+        }
+
+        if (!$queue->registration || !$queue->registration->triage) {
+            throw new \RuntimeException(
+                'Pasien harus melalui triage terlebih dahulu sebelum dipanggil.'
+            );
         }
 
         $lastCall = QueueCall::where('queue_id', $queue->id)
@@ -170,7 +177,8 @@ class QueueService
 
     public function callAndProgress(Polyclinic $polyclinic): ?Queue
     {
-        $queue = Queue::where('polyclinic_id', $polyclinic->id)
+        $queue = Queue::with('registration.triage')
+            ->where('polyclinic_id', $polyclinic->id)
             ->whereDate('queue_date', now()->toDateString())
             ->where('status', self::STATUS_WAITING)
             ->orderBy('queue_sequence', 'asc')
@@ -178,6 +186,12 @@ class QueueService
 
         if (!$queue) {
             return null;
+        }
+
+        if (!$queue->registration || !$queue->registration->triage) {
+            throw new \RuntimeException(
+                'Pasien harus melalui triage terlebih dahulu sebelum dipanggil.'
+            );
         }
 
         $lastCall = QueueCall::where('queue_id', $queue->id)
@@ -195,7 +209,7 @@ class QueueService
             'status' => self::STATUS_IN_PROGRESS,
         ]);
 
-        $queue->registration?->update(['service_status' => 'in_consultation']);
+        $queue->registration->update(['service_status' => 'in_consultation']);
 
         return $queue->fresh();
     }

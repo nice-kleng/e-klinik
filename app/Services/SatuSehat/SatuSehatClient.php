@@ -21,7 +21,7 @@ class SatuSehatClient
         $this->authService = app(AuthService::class);
 
         $this->client = new Client([
-            'base_uri' => $this->baseUrl,
+            'base_uri' => rtrim($this->baseUrl, '/') . '/',
             'timeout' => config('satusehat.timeout', 30),
             'verify' => false,
         ]);
@@ -135,7 +135,7 @@ class SatuSehatClient
         return $this->get($resource . '/' . $id);
     }
 
-    protected function handleError(\Exception $e, string $resource, string $method, ?array $data = null): never
+    protected function handleError(\Exception $e, string $resource, string $method, ?array $data = null): ?array
     {
         $responseBody = null;
         $statusCode = $e->getCode();
@@ -145,6 +145,18 @@ class SatuSehatClient
             $responseBody = $e->getResponse()->getBody()->getContents();
             $statusCode = $e->getResponse()->getStatusCode();
             $decodedResponse = json_decode($responseBody, true);
+
+            // Satu Sehat returns 400 with resource id when validation warnings exist but resource is created
+            if ($statusCode === 400 && isset($decodedResponse['id'])) {
+                Log::warning('Satu Sehat API returned 400 but resource was created', [
+                    'resource' => $resource,
+                    'method' => $method,
+                    'id' => $decodedResponse['id'],
+                ]);
+                $this->logRequest($resource, $method, $data, $decodedResponse, 'warning', 'Resource created with validation warnings');
+                return $decodedResponse;
+            }
+
             $errorMessage = $decodedResponse['message'] ?? $decodedResponse['issue'][0]['details']['text'] ?? $errorMessage;
 
             if (isset($decodedResponse['resourceType']) && $decodedResponse['resourceType'] === 'OperationOutcome') {

@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             PatientSeeder::class,
             LabDataSeeder::class,
             Icd10Seeder::class,
+            RegionSeeder::class,
         ]);
     }
 }

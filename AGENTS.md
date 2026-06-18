@@ -144,15 +144,26 @@ SATUSEHAT_CLIENT_ID= / SATUSEHAT_CLIENT_SECRET= / SATUSEHAT_ORGANIZATION_ID=
 | `laborant` | Lab |
 
 ## Login defaults (after seed)
-| Email | Password | Role |
-|-------|----------|------|
-| admin@e-klinik.com | admin123 | admin |
-| receptionist@e-klinik.com | receptionist123 | receptionist |
-| dokter@e-klinik.com | dokter123 | doctor |
-| apoteker@e-klinik.com | apoteker123 | pharmacist |
-| laboran@e-klinik.com | laboran123 | laborant |
-| kasir@e-klinik.com | kasir123 | cashier |
-| perawat@e-klinik.com | perawat123 | nurse |
+| Email | Password | Role | Poli |
+|-------|----------|------|------|
+| admin@e-klinik.com | admin123 | admin | — |
+| receptionist@e-klinik.com | receptionist123 | receptionist | — |
+| dokter@e-klinik.com | dokter123 | doctor | Umum |
+| dokter.gigi@e-klinik.com | dokter123 | doctor | Gigi |
+| dokter.anak@e-klinik.com | dokter123 | doctor | Anak |
+| dokter.pdl@e-klinik.com | dokter123 | doctor | Penyakit Dalam |
+| dokter.saraf@e-klinik.com | dokter123 | doctor | Saraf |
+| dokter.radiologi@e-klinik.com | dokter123 | doctor | Radiologi |
+| apoteker@e-klinik.com | apoteker123 | pharmacist | — |
+| laboran@e-klinik.com | laboran123 | laborant | — |
+| kasir@e-klinik.com | kasir123 | cashier | — |
+| perawat@e-klinik.com | perawat123 | nurse | — |
+| perawat.umu@e-klinik.com | perawat123 | nurse | Umum |
+| perawat.gigi@e-klinik.com | perawat123 | nurse | Gigi |
+| perawat.anak@e-klinik.com | perawat123 | nurse | Anak |
+| perawat.pdl@e-klinik.com | perawat123 | nurse | Penyakit Dalam |
+| perawat.saraf@e-klinik.com | perawat123 | nurse | Saraf |
+| perawat.radiologi@e-klinik.com | perawat123 | nurse | Radiologi |
 
 ## Known gaps
 - **No tests** — phpunit.xml exists (SQLite in-memory) but `tests/` is empty

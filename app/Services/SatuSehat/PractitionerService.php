@@ -44,6 +44,28 @@ class PractitionerService
         return $this->client->get('Practitioner', ['identifier' => 'https://fhir.kemkes.go.id/id/nik|' . $nik]);
     }
 
+    public function syncPractitioner(Doctor $doctor): ?array
+    {
+        $resourceRef = $this->getResourceReference($doctor, 'Practitioner');
+        if ($resourceRef && $resourceRef->status === 'synced') {
+            return $resourceRef->payload;
+        }
+
+        if (!$resourceRef) {
+            $nik = $doctor->user?->nik;
+            if (!empty($nik)) {
+                $existing = $this->searchPractitioner($nik);
+                if ($existing && isset($existing['entry'][0]['resource']['id'])) {
+                    $ssId = $existing['entry'][0]['resource']['id'];
+                    $this->saveResourceReference($doctor, 'Practitioner', $ssId, $existing['entry'][0]['resource']);
+                    return $existing['entry'][0]['resource'];
+                }
+            }
+        }
+
+        return $this->createPractitioner($doctor);
+    }
+
     protected function buildPractitionerResource(Doctor $doctor): array
     {
         $doctor->loadMissing(['user']);
@@ -51,24 +73,32 @@ class PractitionerService
         $nameParts = explode(' ', $doctor->name, 2);
         $givenName = $nameParts[0] ?? '';
         $familyName = $nameParts[1] ?? '';
+        $orgId = config('satusehat.organization_id');
+
+        $identifiers = [];
+
+        $nik = $doctor->user?->nik;
+        if (!empty($nik)) {
+            $identifiers[] = [
+                'use' => 'official',
+                'system' => 'https://fhir.kemkes.go.id/id/nik',
+                'value' => $nik,
+            ];
+        }
+
+        $identifiers[] = [
+            'use' => 'official',
+            'system' => 'http://sys-ids.kemkes.go.id/practitioner/' . $orgId,
+            'value' => $doctor->sip_number ?? $doctor->code,
+        ];
 
         $resource = [
             'resourceType' => 'Practitioner',
-            'identifier' => [
-                [
-                    'use' => 'official',
-                    'system' => 'https://fhir.kemkes.go.id/id/nik',
-                    'value' => $doctor->user?->nik ?? $doctor->code,
-                ],
-                [
-                    'use' => 'official',
-                    'system' => 'http://sys-ids.kemkes.go.id/practitioner/' . config('satusehat.organization_id'),
-                    'value' => $doctor->sip_number ?? $doctor->code,
-                ],
-            ],
+            'identifier' => $identifiers,
             'name' => [
                 [
                     'use' => 'official',
+                    'text' => $doctor->name,
                     'family' => $familyName,
                     'given' => [$givenName],
                 ],
@@ -80,12 +110,15 @@ class PractitionerService
                     'use' => 'mobile',
                 ],
             ],
-            'qualification' => [
+        ];
+
+        if (!empty($doctor->sip_number)) {
+            $resource['qualification'] = [
                 [
                     'identifier' => [
                         [
-                            'system' => 'http://sys-ids.kemkes.go.id/practitioner/' . config('satusehat.organization_id'),
-                            'value' => $doctor->sip_number ?? '',
+                            'system' => 'http://sys-ids.kemkes.go.id/practitioner/' . $orgId,
+                            'value' => $doctor->sip_number,
                         ],
                     ],
                     'code' => [
@@ -98,8 +131,8 @@ class PractitionerService
                         ],
                     ],
                 ],
-            ],
-        ];
+            ];
+        }
 
         return $resource;
     }
