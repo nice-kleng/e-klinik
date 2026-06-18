@@ -69,6 +69,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     // Medical Records — admin, doctor
+    Route::get('medical-records/icd10-search', [MedicalRecordController::class, 'icd10Search'])
+        ->name('medical-records.icd10-search')
+        ->middleware('role:admin|doctor');
+    Route::get('medical-records/icd9-search', [MedicalRecordController::class, 'icd9Search'])
+        ->name('medical-records.icd9-search')
+        ->middleware('role:admin|doctor');
+    Route::get('medical-records/workspace/{queue}', [MedicalRecordController::class, 'workspace'])
+        ->name('medical-records.workspace')
+        ->middleware('role:admin|doctor');
     Route::resource('medical-records', MedicalRecordController::class)
         ->except(['destroy'])
         ->middleware('role:admin|doctor');

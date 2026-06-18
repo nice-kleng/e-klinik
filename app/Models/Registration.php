@@ -22,6 +22,8 @@ class Registration extends Model
         'registration_date',
         'source',
         'service_status',
+        'visit_type',
+        'visit_sequence',
         'bpjs_antrian_id',
         'no_sep',
         'age_text',

@@ -391,6 +391,17 @@
                                         <label class="form-label small fw-medium">Catatan</label>
                                         <textarea name="notes" class="form-control" rows="2" placeholder="Keluhan awal atau catatan lain"></textarea>
                                     </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-medium">Jenis Kunjungan</label>
+                                        <select name="visit_type" id="visit_type" class="form-select">
+                                            <option value="">-- Otomatis (Baru/Lama) --</option>
+                                            <option value="Baru">Baru</option>
+                                            <option value="Lama">Lama</option>
+                                            <option value="Kontrol">Kontrol</option>
+                                            <option value="Rujukan">Rujukan</option>
+                                        </select>
+                                        <small class="text-muted">Kosongkan untuk deteksi otomatis</small>
+                                    </div>
 
                                     {{-- {{â”€â”€ Estimated Queue Info â”€â”€}} --}}
                                     <div id="queuePreview" class="d-none p-3 bg-light rounded-3 mb-3">

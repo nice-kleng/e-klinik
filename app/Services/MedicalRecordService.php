@@ -2,8 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\Icd9CmDiagnosis;
 use App\Models\Icd10Diagnosis;
 use App\Models\MedicalRecord;
+use App\Models\MedicalRecordDiagnosis;
+use App\Models\MedicalRecordProcedure;
 use App\Models\Patient;
 use App\Models\Prescription;
 use App\Models\PrescriptionItem;
@@ -52,14 +55,53 @@ class MedicalRecordService
                 $data['vital_signs'] = $this->normalizeVitalSigns($data['vital_signs']);
             }
 
+            // Auto-set registration_id from queue if not provided
+            if (empty($data['registration_id']) && !empty($data['queue_id'])) {
+                $queue = \App\Models\Queue::find($data['queue_id']);
+                if ($queue) {
+                    $data['registration_id'] = $queue->registration_id;
+                }
+            }
+
             $record = MedicalRecord::create($data);
 
+            // Legacy string columns for backward compatibility
             if (!empty($data['diagnosis_primary'])) {
                 $record->update(['diagnosis_primary' => $data['diagnosis_primary']]);
             }
 
             if (!empty($data['diagnosis_secondary']) && is_array($data['diagnosis_secondary'])) {
                 $record->update(['diagnosis_secondary' => $data['diagnosis_secondary']]);
+            }
+
+            // Save to normalized pivot tables
+            if (!empty($data['diagnosis_primary_id'])) {
+                $record->diagnoses()->create([
+                    'icd10_diagnosis_id' => $data['diagnosis_primary_id'],
+                    'type' => 'primary',
+                    'order' => 0,
+                ]);
+            }
+
+            if (!empty($data['diagnosis_secondary_ids']) && is_array($data['diagnosis_secondary_ids'])) {
+                foreach ($data['diagnosis_secondary_ids'] as $order => $id) {
+                    $record->diagnoses()->create([
+                        'icd10_diagnosis_id' => $id,
+                        'type' => 'secondary',
+                        'order' => $order,
+                    ]);
+                }
+            }
+
+            if (!empty($data['procedure_ids']) && is_array($data['procedure_ids'])) {
+                foreach ($data['procedure_ids'] as $order => $id) {
+                    $notes = $data['procedure_notes'][$order] ?? null;
+                    $record->procedures()->create([
+                        'icd9_cm_diagnosis_id' => $id,
+                        'notes' => $notes,
+                        'order' => $order,
+                    ]);
+                }
             }
 
             return $record;
@@ -82,6 +124,39 @@ class MedicalRecordService
             }
 
             $mr->update($data);
+
+            // Sync normalized pivot tables
+            if (isset($data['diagnosis_primary_id'])) {
+                $mr->diagnoses()->where('type', 'primary')->delete();
+                $mr->diagnoses()->create([
+                    'icd10_diagnosis_id' => $data['diagnosis_primary_id'],
+                    'type' => 'primary',
+                    'order' => 0,
+                ]);
+            }
+
+            if (isset($data['diagnosis_secondary_ids']) && is_array($data['diagnosis_secondary_ids'])) {
+                $mr->diagnoses()->where('type', 'secondary')->delete();
+                foreach ($data['diagnosis_secondary_ids'] as $order => $id) {
+                    $mr->diagnoses()->create([
+                        'icd10_diagnosis_id' => $id,
+                        'type' => 'secondary',
+                        'order' => $order,
+                    ]);
+                }
+            }
+
+            if (isset($data['procedure_ids']) && is_array($data['procedure_ids'])) {
+                $mr->procedures()->delete();
+                foreach ($data['procedure_ids'] as $order => $id) {
+                    $notes = $data['procedure_notes'][$order] ?? null;
+                    $mr->procedures()->create([
+                        'icd9_cm_diagnosis_id' => $id,
+                        'notes' => $notes,
+                        'order' => $order,
+                    ]);
+                }
+            }
 
             return $mr->fresh();
         });
@@ -223,43 +298,15 @@ class MedicalRecordService
             $results['encounter'] = ['error' => $e->getMessage()];
         }
 
-        if ($mr->diagnosis_primary) {
-            try {
-                $conditionResult = $this->conditionService->createCondition(
-                    $mr->patient,
-                    $mr->diagnosis_primary,
-                    'primary',
-                    $mr
-                );
-                $results['condition_primary'] = $conditionResult;
-            } catch (\Exception $e) {
-                Log::error('Failed to submit primary condition to Satu Sehat', [
-                    'medical_record_id' => $mr->id,
-                    'error' => $e->getMessage(),
-                ]);
-                $results['condition_primary'] = ['error' => $e->getMessage()];
-            }
-        }
-
-        if (!empty($mr->diagnosis_secondary)) {
-            foreach ($mr->diagnosis_secondary as $index => $code) {
-                try {
-                    $conditionResult = $this->conditionService->createCondition(
-                        $mr->patient,
-                        $code,
-                        'secondary',
-                        $mr
-                    );
-                    $results['condition_secondary_' . $index] = $conditionResult;
-                } catch (\Exception $e) {
-                    Log::error('Failed to submit secondary condition to Satu Sehat', [
-                        'medical_record_id' => $mr->id,
-                        'code' => $code,
-                        'error' => $e->getMessage(),
-                    ]);
-                    $results['condition_secondary_' . $index] = ['error' => $e->getMessage()];
-                }
-            }
+        try {
+            $conditionResult = $this->conditionService->createCondition($mr);
+            $results['condition'] = $conditionResult;
+        } catch (\Exception $e) {
+            Log::error('Failed to submit condition to Satu Sehat', [
+                'medical_record_id' => $mr->id,
+                'error' => $e->getMessage(),
+            ]);
+            $results['condition'] = ['error' => $e->getMessage()];
         }
 
         if ($mr->vital_signs) {

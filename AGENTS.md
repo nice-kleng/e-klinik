@@ -100,8 +100,15 @@ SATUSEHAT_CLIENT_ID= / SATUSEHAT_CLIENT_SECRET= / SATUSEHAT_ORGANIZATION_ID=
 - **`callAjax()`** — method AJAX tanpa redirect. Panggil `callAndProgress()` + fire `QueueUpdated` action `called`
 - **`queueData()`** — JSON endpoint detail queue (status, patient, polyclinic)
 - **`inProgress()`/`complete()`/`cancel()`** — dual response: JSON untuk AJAX (`expectsJson()`), redirect untuk form
-- **Tombol di index:** Panggil (AJAX), Proses/Selesai/Batal (AJAX), Detail (link redirect)
+- **Tombol di index:** Panggil (AJAX), Proses/Selesai/Batal (AJAX), RME (link ke workspace), Detail (link redirect)
 - **Role-aware:** receptionist hanya lihat Panggil + Batal, doctor/perawat lihat semua aksi
+
+### MedicalRecordController — Web Actions
+- **`index()`** — daftar queue hari ini (filter tanggal + poli), link ke workspace. BUKAN daftar medical records
+- **`workspace(Queue $queue)`** — halaman workspace pasien: header pasien gradien, riwayat RME, link Buat/Lihat RME
+- **`create()`** — auto-fill pasien/dokter/poli dari `queue_id` param, ICD-10 autocomplete, secondary diagnosis
+- **`store()`** — validasi `registration_id`, simpan dengan medical record service
+- **`icd10Search()`** — AJAX endpoint ICD-10 autocomplete (Icd10Service)
 
 ## Conventions
 - All response messages in **Indonesian**
@@ -111,7 +118,7 @@ SATUSEHAT_CLIENT_ID= / SATUSEHAT_CLIENT_SECRET= / SATUSEHAT_ORGANIZATION_ID=
 - ICD-10 seeder is a **migration** (not seeder class) at `database/migrations/000021_*`
 
 ## Architecture Notes (Registration-refactor)
-- **`registrations`** table baru: mencatat setiap kunjungan pasien. Memiliki `registration_number`, `age_text/years/months/days` (dihitung saat daftar), `service_status` end-to-end, `no_sep`, `bpjs_antrian_id`
+- **`registrations`** table baru: mencatat setiap kunjungan pasien. Memiliki `registration_number`, `age_text/years/months/days` (dihitung saat daftar), `service_status` end-to-end, `no_sep`, `bpjs_antrian_id`, `visit_type` (Baru/Lama/Kontrol/Rujukan — auto-detect + bisa override receptionist), `visit_sequence` (urutan kunjungan pasien ini)
 - **`queues`** disederhanakan: hanya untuk calling. Kolom `registration_id` (FK), `queue_sequence` (integer), `source` (walk_in/mjkn), `confirmed_at` (nullable untuk MJKN). Kolom lama dihapus: `patient_id`, `doctor_id`, `service_type`, `bpjs_antrian_id`, `bpjs_sep_id`, `estimated_wait_time`, `called_at`, `completed_at`, `notes`
 - **`queue_calls`** baru: riwayat pemanggilan per antrean (call_sequence, called_by, called_at, responded_at)
 - **`queue_milestones`** baru: taskid BPJS Antrol 1-7
@@ -123,6 +130,7 @@ SATUSEHAT_CLIENT_ID= / SATUSEHAT_CLIENT_SECRET= / SATUSEHAT_ORGANIZATION_ID=
 - **Relasi**: `patients → registrations → queues → queue_calls/milestones`
 - Akses pasien via Queue: `$queue->registration->patient` (bukan `$queue->patient`)
 - Akses dokter via Queue: `$queue->registration->doctor` (bukan `$queue->doctor`)
+- **Flow visit_type**: Registrasi auto-detect Baru/Lama dari `Registration::where('patient_id')->count()`, bisa di-override receptionist via dropdown. MedicalRecord auto-fill `visit_type` dari Registration saat create (readonly).
 
 ## Roles (via Spatie)
 | Role | Modul |

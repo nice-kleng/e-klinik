@@ -83,32 +83,44 @@
                 <div class="card-header bg-white">
                     <h6 class="mb-0">Tanda-Tanda Vital</h6>
                 </div>
-                <div class="card-body p-0">
+                <div class="card-body">
                     @php $vs = $medicalRecord->vital_signs ?? []; @endphp
-                    <table class="table table-striped mb-0">
-                        <thead>
-                            <tr>
-                                <th>TD (mmHg)</th>
-                                <th>Nadi (x/mnt)</th>
-                                <th>Suhu (Â°C)</th>
-                                <th>RR (x/mnt)</th>
-                                <th>BB (kg)</th>
-                                <th>TB (cm)</th>
-                                <th>SpOâ‚‚ (%)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>{{ $vs['blood_pressure'] ?? '-' }}</td>
-                                <td>{{ $vs['heart_rate'] ?? '-' }}</td>
-                                <td>{{ $vs['temperature'] ?? '-' }}</td>
-                                <td>{{ $vs['respiratory_rate'] ?? '-' }}</td>
-                                <td>{{ $vs['weight'] ?? '-' }}</td>
-                                <td>{{ $vs['height'] ?? '-' }}</td>
-                                <td>{{ $vs['oxygen_saturation'] ?? '-' }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    @php
+                        $vitals = [
+                            ['label' => 'TD', 'unit' => 'mmHg', 'key' => 'blood_pressure', 'icon' => 'fa-heart-pulse'],
+                            ['label' => 'Nadi', 'unit' => '/menit', 'key' => 'heart_rate', 'icon' => 'fa-heart'],
+                            ['label' => 'Suhu', 'unit' => '°C', 'key' => 'temperature', 'icon' => 'fa-temperature-high'],
+                            ['label' => 'RR', 'unit' => '/menit', 'key' => 'respiratory_rate', 'icon' => 'fa-lungs'],
+                            ['label' => 'SpO₂', 'unit' => '%', 'key' => 'oxygen_saturation', 'icon' => 'fa-droplet'],
+                            ['label' => 'BB', 'unit' => 'kg', 'key' => 'weight', 'icon' => 'fa-weight-scale'],
+                            ['label' => 'TB', 'unit' => 'cm', 'key' => 'height', 'icon' => 'fa-ruler-vertical'],
+                            ['label' => 'GCS', 'unit' => '', 'key' => 'gcs', 'icon' => 'fa-brain'],
+                            ['label' => 'Gula Darah', 'unit' => 'mg/dL', 'key' => 'blood_glucose', 'icon' => 'fa-droplet'],
+                        ];
+                    @endphp
+                    <div class="row g-2">
+                        @foreach($vitals as $v)
+                            @php $val = $vs[$v['key']] ?? null; @endphp
+                            <div class="col-4 col-md-3 col-lg-{{ $v['key'] === 'blood_glucose' ? '4' : '2' }}">
+                                <div class="border rounded-3 p-2 text-center h-100 {{ $val ? 'bg-light' : 'bg-white' }}">
+                                    <div class="text-muted small mb-1">
+                                        <i class="fas {{ $v['icon'] }} me-1"></i>{{ $v['label'] }}
+                                    </div>
+                                    <div class="fw-bold fs-5 {{ $val ? 'text-dark' : 'text-muted' }}">
+                                        {{ $val ?? '-' }}
+                                        @if($val && $v['unit'])
+                                            <small class="fw-normal text-muted">{{ $v['unit'] }}</small>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                    @if(!empty($vs['notes']))
+                        <div class="mt-2 p-2 bg-light rounded small">
+                            <strong class="text-muted">Catatan:</strong> {{ $vs['notes'] }}
+                        </div>
+                    @endif
                 </div>
             </div>
 
@@ -136,6 +148,13 @@
                 </div>
             </div>
 
+            @php
+                $allDiags = $medicalRecord->diagnoses()->with('icd10Diagnosis')->orderBy('type')->orderBy('order')->get();
+                $primaryDiag = $allDiags->where('type', 'primary')->first();
+                $secondaryDiags = $allDiags->where('type', 'secondary');
+                $procedures = $medicalRecord->procedures()->with('icd9CmDiagnosis')->orderBy('order')->get();
+            @endphp
+
             <div class="card border-0 shadow-sm mt-3">
                 <div class="card-header bg-white">
                     <h6 class="mb-0">Diagnosis</h6>
@@ -144,9 +163,38 @@
                     <table class="table table-sm mb-0">
                         <tr>
                             <td class="text-muted" style="width:140px">Diagnosis Utama</td>
-                            <td><strong>{{ $medicalRecord->diagnosis_primary ?? '-' }}</strong></td>
+                            <td>
+                                @if($primaryDiag)
+                                    <strong>
+                                        <span class="badge bg-info me-1">{{ $primaryDiag->icd10Diagnosis->code }}</span>
+                                        {{ $primaryDiag->icd10Diagnosis->name }}
+                                    </strong>
+                                @elseif($medicalRecord->diagnosis_primary)
+                                    <strong>{{ $medicalRecord->diagnosis_primary }}</strong>
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
+                            </td>
                         </tr>
-                        @if($medicalRecord->diagnosis_secondary)
+                        @if($secondaryDiags->isNotEmpty())
+                            <tr>
+                                <td class="text-muted">Diagnosis Sekunder</td>
+                                <td>
+                                    @foreach($secondaryDiags as $sd)
+                                        <span class="badge bg-secondary me-1" title="{{ $sd->icd10Diagnosis->name ?? '' }}">
+                                            {{ $sd->icd10Diagnosis->code ?? '#' . $sd->id }}
+                                        </span>
+                                    @endforeach
+                                    @if($medicalRecord->diagnosis_secondary)
+                                        @foreach((array)$medicalRecord->diagnosis_secondary as $code)
+                                            @if(is_string($code))
+                                                <span class="badge bg-light text-dark me-1">{{ $code }}</span>
+                                            @endif
+                                        @endforeach
+                                    @endif
+                                </td>
+                            </tr>
+                        @elseif($medicalRecord->diagnosis_secondary)
                             <tr>
                                 <td class="text-muted">Diagnosis Sekunder</td>
                                 <td>
@@ -159,6 +207,34 @@
                     </table>
                 </div>
             </div>
+
+            @if($procedures->isNotEmpty())
+                <div class="card border-0 shadow-sm mt-3">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0">Prosedur / Tindakan</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Kode</th>
+                                    <th>Nama Tindakan</th>
+                                    <th>Catatan</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($procedures as $proc)
+                                    <tr>
+                                        <td><span class="badge bg-warning text-dark">{{ $proc->icd9CmDiagnosis->code }}</span></td>
+                                        <td>{{ $proc->icd9CmDiagnosis->name }}</td>
+                                        <td class="text-muted">{{ $proc->notes ?? '-' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endif
 
             @if($medicalRecord->assessment)
                 <div class="card border-0 shadow-sm mt-3">

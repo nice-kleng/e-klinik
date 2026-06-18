@@ -27,6 +27,15 @@ return new class extends Migration
         Schema::table('queues', function (Blueprint $table) {
             $table->dropForeign(['patient_id']);
             $table->dropForeign(['doctor_id']);
+        });
+
+        if (Schema::hasColumn('queues', 'bpjs_sep_id')) {
+            Schema::table('queues', function (Blueprint $table) {
+                $table->dropIndex('queues_bpjs_sep_id_index');
+            });
+        }
+
+        Schema::table('queues', function (Blueprint $table) {
             $table->dropColumn([
                 'patient_id',
                 'doctor_id',

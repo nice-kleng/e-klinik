@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Events\QueueUpdated;
 use App\Http\Controllers\Controller;
+use App\Models\MedicalRecord;
 use App\Models\Polyclinic;
 use App\Models\Queue;
 use App\Models\Registration;
@@ -58,7 +59,18 @@ class QueueController extends Controller
             'queueCalls',
         ]);
 
-        return view('queues.show', compact('queue'));
+        $previousRecords = collect();
+        if ($queue->registration && $queue->registration->patient) {
+            $previousRecords = MedicalRecord::with(['polyclinic', 'doctor'])
+                ->where('patient_id', $queue->registration->patient_id)
+                ->where('id', '!=', $queue->medicalRecord?->id)
+                ->orderBy('visit_date', 'desc')
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get();
+        }
+
+        return view('queues.show', compact('queue', 'previousRecords'));
     }
 
     public function call(Queue $queue): RedirectResponse

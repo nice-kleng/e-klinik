@@ -13,6 +13,9 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
+    <!-- Select2 (non-module, strict-safe) -->
+    <script defer src="{{ asset('vendor/select2/select2.min.js') }}"></script>
+
     @stack('styles')
 </head>
 <body>

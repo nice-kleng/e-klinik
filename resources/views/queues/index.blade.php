@@ -114,6 +114,9 @@
                                 @if(in_array($queue->status, ['waiting', 'called']))
                                     <button class="btn btn-sm btn-danger btn-cancel" data-queue-id="{{ $queue->id }}" data-url="{{ route('queues.cancel', $queue) }}">Batal</button>
                                 @endif
+                                @if($queue->status == 'in_progress')
+                                    <a href="{{ route('medical-records.workspace', $queue) }}" class="btn btn-sm btn-warning">RME</a>
+                                @endif
                                 <a href="{{ route('queues.show', $queue) }}" class="btn btn-sm btn-outline-secondary">Detail</a>
                             </td>
                         </tr>

@@ -9,9 +9,12 @@
 
     @include('components.alert')
 
-    <form method="POST" action="{{ route('medical-records.update', $medicalRecord) }}">
+    <form method="POST" action="{{ route('medical-records.update', $medicalRecord) }}" id="formRme">
         @csrf
         @method('PUT')
+        @if($medicalRecord->registration_id)
+            <input type="hidden" name="registration_id" value="{{ $medicalRecord->registration_id }}">
+        @endif
 
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white">
@@ -54,14 +57,8 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Jenis Kunjungan</label>
-                        <select name="visit_type" class="form-select @error('visit_type') is-invalid @enderror">
-                            <option value="">-- Pilih --</option>
-                            <option value="Baru" {{ old('visit_type', $medicalRecord->visit_type) == 'Baru' ? 'selected' : '' }}>Baru</option>
-                            <option value="Lama" {{ old('visit_type', $medicalRecord->visit_type) == 'Lama' ? 'selected' : '' }}>Lama</option>
-                            <option value="Kontrol" {{ old('visit_type', $medicalRecord->visit_type) == 'Kontrol' ? 'selected' : '' }}>Kontrol</option>
-                            <option value="Rujukan" {{ old('visit_type', $medicalRecord->visit_type) == 'Rujukan' ? 'selected' : '' }}>Rujukan</option>
-                        </select>
-                        @error('visit_type') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        <input type="hidden" name="visit_type" value="{{ old('visit_type', $medicalRecord->visit_type) }}">
+                        <div class="form-control-plaintext fw-medium">{{ old('visit_type', $medicalRecord->visit_type ?? '-') }}</div>
                     </div>
                 </div>
             </div>
@@ -113,7 +110,7 @@
                         <input type="number" name="vital_signs[heart_rate]" class="form-control" value="{{ $vs['heart_rate'] ?? '' }}">
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label">Suhu (Â°C)</label>
+                        <label class="form-label">Suhu (&deg;C)</label>
                         <input type="text" name="vital_signs[temperature]" class="form-control" value="{{ $vs['temperature'] ?? '' }}" placeholder="36.5">
                     </div>
                     <div class="col-md-2">
@@ -129,8 +126,20 @@
                         <input type="number" step="0.1" name="vital_signs[height]" class="form-control" value="{{ $vs['height'] ?? '' }}">
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label">SpOâ‚‚ (%)</label>
+                        <label class="form-label">SpO&#8322; (%)</label>
                         <input type="number" name="vital_signs[oxygen_saturation]" class="form-control" value="{{ $vs['oxygen_saturation'] ?? '' }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">GCS</label>
+                        <input type="number" name="vital_signs[gcs]" class="form-control" value="{{ $vs['gcs'] ?? '' }}" placeholder="3-15" min="3" max="15">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Gula Darah (mg/dL)</label>
+                        <input type="number" name="vital_signs[blood_glucose]" class="form-control" value="{{ $vs['blood_glucose'] ?? '' }}" placeholder="100">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Catatan TTV</label>
+                        <textarea name="vital_signs[notes]" class="form-control" rows="2" placeholder="Catatan tambahan tentang tanda vital">{{ $vs['notes'] ?? '' }}</textarea>
                     </div>
                 </div>
             </div>
@@ -152,13 +161,85 @@
                         <textarea name="plan" class="form-control @error('plan') is-invalid @enderror" rows="3">{{ old('plan', $medicalRecord->plan) }}</textarea>
                         @error('plan') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
-                    <div class="col-md-4">
+
+                    @php
+                        $primaryDiag = $medicalRecord->diagnoses()->where('type', 'primary')->with('icd10Diagnosis')->first();
+                        $secondaryDiags = $medicalRecord->diagnoses()->where('type', 'secondary')->with('icd10Diagnosis')->get();
+                        $procedures = $medicalRecord->procedures()->with('icd9CmDiagnosis')->orderBy('order')->get();
+                    @endphp
+
+                    <div class="col-md-6">
                         <label class="form-label">Diagnosis Utama (ICD-10)</label>
-                        <input type="text" name="diagnosis_primary" class="form-control @error('diagnosis_primary') is-invalid @enderror" value="{{ old('diagnosis_primary', $medicalRecord->diagnosis_primary) }}" placeholder="Kode ICD-10" list="icdList">
-                        <datalist id="icdList"></datalist>
-                        @error('diagnosis_primary') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        <select name="diagnosis_primary_id" id="diagnosisPrimary" class="form-select select2-icd10"
+                            data-ajax-url="{{ route('medical-records.icd10-search') }}"
+                            data-placeholder="Cari kode atau nama diagnosis...">
+                            @if($primaryDiag)
+                                <option value="{{ $primaryDiag->icd10_diagnosis_id }}" selected>
+                                    {{ $primaryDiag->icd10Diagnosis->code }} — {{ $primaryDiag->icd10Diagnosis->name }}
+                                </option>
+                            @endif
+                        </select>
+                        @error('diagnosis_primary_id') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                     </div>
-                    <div class="col-md-8">
+
+                    <div class="col-md-6">
+                        <label class="form-label">Diagnosis Sekunder</label>
+                        <select name="diagnosis_secondary_ids[]" id="diagnosisSecondary" class="form-select select2-icd10" multiple
+                            data-ajax-url="{{ route('medical-records.icd10-search') }}"
+                            data-placeholder="Cari diagnosis sekunder...">
+                            @foreach($secondaryDiags as $sd)
+                                <option value="{{ $sd->icd10_diagnosis_id }}" selected>
+                                    {{ $sd->icd10Diagnosis->code }} — {{ $sd->icd10Diagnosis->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('diagnosis_secondary_ids') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label">Prosedur / Tindakan (ICD-9-CM)</label>
+                        <div id="proceduresContainer">
+                            @forelse($procedures as $proc)
+                                <div class="row g-2 mb-2 procedure-row">
+                                    <div class="col-md-6">
+                                        <select name="procedure_ids[]" class="form-select select2-icd9-init"
+                                            data-ajax-url="{{ route('medical-records.icd9-search') }}"
+                                            data-placeholder="Cari prosedur...">
+                                            <option value="{{ $proc->icd9_cm_diagnosis_id }}" selected>
+                                                {{ $proc->icd9CmDiagnosis->code }} — {{ $proc->icd9CmDiagnosis->name }}
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="text" name="procedure_notes[]" class="form-control" placeholder="Catatan tindakan" value="{{ $proc->notes }}">
+                                    </div>
+                                    <div class="col-md-2 d-flex gap-1">
+                                        <button type="button" class="btn btn-outline-success btn-add-procedure"><i class="fas fa-plus"></i></button>
+                                        <button type="button" class="btn btn-outline-danger btn-remove-procedure"><i class="fas fa-times"></i></button>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="row g-2 mb-2 procedure-row">
+                                    <div class="col-md-6">
+                                        <select name="procedure_ids[]" class="form-select select2-icd9"
+                                            data-ajax-url="{{ route('medical-records.icd9-search') }}"
+                                            data-placeholder="Cari prosedur...">
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="text" name="procedure_notes[]" class="form-control" placeholder="Catatan tindakan">
+                                    </div>
+                                    <div class="col-md-2 d-flex gap-1">
+                                        <button type="button" class="btn btn-outline-success btn-add-procedure"><i class="fas fa-plus"></i></button>
+                                        <button type="button" class="btn btn-outline-danger btn-remove-procedure" style="display:none;"><i class="fas fa-times"></i></button>
+                                    </div>
+                                </div>
+                            @endforelse
+                        </div>
+                        @error('procedure_ids') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                    </div>
+
+                    <div class="col-md-4">
                         <label class="form-label">Catatan</label>
                         <textarea name="notes" class="form-control @error('notes') is-invalid @enderror" rows="2">{{ old('notes', $medicalRecord->notes) }}</textarea>
                         @error('notes') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -178,4 +259,79 @@
         </div>
     </form>
 </div>
+
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const container = document.getElementById('proceduresContainer');
+    const AJAX_URL = '{{ route('medical-records.icd9-search') }}';
+
+    function makeSelect2(el) {
+        $(el).select2({
+            theme: 'bootstrap-5',
+            placeholder: el.dataset.placeholder || 'Cari...',
+            minimumInputLength: 2,
+            allowClear: true,
+            ajax: {
+                url: AJAX_URL,
+                dataType: 'json',
+                delay: 300,
+                data: function (p) { return { q: p.term }; },
+                processResults: function (data) {
+                    if (!Array.isArray(data)) { return { results: [] }; }
+                    return { results: data.map(function (item) { return { id: item.id, text: item.code + ' — ' + item.name }; }) };
+                },
+                cache: true
+            }
+        });
+    }
+
+    function destroySelect2(el) {
+        try {
+            if ($(el).data('select2')) {
+                $(el).select2('destroy');
+            }
+        } catch (_) {}
+    }
+
+    // Init pre-filled select2-icd9-init (existing rows from server)
+    container.querySelectorAll('.select2-icd9-init').forEach(makeSelect2);
+
+    function createProcedureRow() {
+        const html = '<div class="row g-2 mb-2 procedure-row">' +
+            '<div class="col-md-6">' +
+            '<select name="procedure_ids[]" class="form-select" data-placeholder="Cari prosedur..."></select>' +
+            '</div>' +
+            '<div class="col-md-4">' +
+            '<input type="text" name="procedure_notes[]" class="form-control" placeholder="Catatan tindakan">' +
+            '</div>' +
+            '<div class="col-md-2 d-flex gap-1">' +
+            '<button type="button" class="btn btn-outline-success btn-add-procedure"><i class="fas fa-plus"></i></button>' +
+            '<button type="button" class="btn btn-outline-danger btn-remove-procedure"><i class="fas fa-times"></i></button>' +
+            '</div>' +
+            '</div>';
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        const row = div.firstElementChild;
+        container.appendChild(row);
+        const select = row.querySelector('select');
+        row.querySelector('.btn-add-procedure').style.display = 'none';
+        makeSelect2(select);
+    }
+
+    container.addEventListener('click', function (e) {
+        if (e.target.closest('.btn-add-procedure')) {
+            createProcedureRow();
+        }
+
+        if (e.target.closest('.btn-remove-procedure')) {
+            const row = e.target.closest('.procedure-row');
+            row.querySelectorAll('select').forEach(destroySelect2);
+            row.remove();
+        }
+    });
+});
+</script>
+@endpush

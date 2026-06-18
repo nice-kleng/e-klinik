@@ -95,4 +95,24 @@ class MedicalRecord extends Model
     {
         return $this->hasMany(LabRequest::class);
     }
+
+    public function diagnoses(): HasMany
+    {
+        return $this->hasMany(MedicalRecordDiagnosis::class)->orderBy('type')->orderBy('order');
+    }
+
+    public function primaryDiagnosis(): HasMany
+    {
+        return $this->hasMany(MedicalRecordDiagnosis::class)->where('type', 'primary')->take(1);
+    }
+
+    public function secondaryDiagnoses(): HasMany
+    {
+        return $this->hasMany(MedicalRecordDiagnosis::class)->where('type', 'secondary')->orderBy('order');
+    }
+
+    public function procedures(): HasMany
+    {
+        return $this->hasMany(MedicalRecordProcedure::class)->orderBy('order');
+    }
 }

@@ -2,10 +2,12 @@ import * as bootstrap from 'bootstrap';
 import Swal from 'sweetalert2';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
+import $ from 'jquery';
 
 window.bootstrap = bootstrap;
 window.Swal = Swal;
 window.Pusher = Pusher;
+window.$ = window.jQuery = $;
 window.Echo = new Echo({
     broadcaster: 'reverb',
     key: import.meta.env.VITE_REVERB_APP_KEY,
@@ -78,4 +80,44 @@ document.addEventListener('DOMContentLoaded', function () {
 
             document.dispatchEvent(new CustomEvent('queue-updated', { detail: e }));
         });
+
+    function initSelect2Ajax(selector) {
+        $(selector).each(function () {
+            const $el = $(this);
+            $el.select2({
+                theme: 'bootstrap-5',
+                placeholder: $el.data('placeholder') || 'Cari...',
+                minimumInputLength: 2,
+                allowClear: true,
+                ajax: {
+                    url: $el.data('ajaxUrl'),
+                    dataType: 'json',
+                    delay: 300,
+                    data: function (params) {
+                        return { q: params.term };
+                    },
+                    processResults: function (data) {
+                        try {
+                            if (!Array.isArray(data)) {
+                                console.error('Search: unexpected response format', data);
+                                return { results: [] };
+                            }
+                            return {
+                                results: data.map(function (item) {
+                                    return { id: item.id, text: item.code + ' — ' + item.name };
+                                })
+                            };
+                        } catch (e) {
+                            console.error('Search error:', e, 'response:', data);
+                            return { results: [] };
+                        }
+                    },
+                    cache: true
+                }
+            });
+        });
+    }
+
+    initSelect2Ajax('.select2-icd10');
+    initSelect2Ajax('.select2-icd9');
 });

@@ -123,6 +123,7 @@ class RegistrationController extends Controller
             'source' => 'required|in:walk_in,mjkn',
             'bpjs_antrian_id' => 'nullable|string|max:50',
             'no_sep' => 'nullable|string|max:50',
+            'visit_type' => 'nullable|in:Baru,Lama,Kontrol,Rujukan',
             'notes' => 'nullable|string',
         ];
 
@@ -172,6 +173,7 @@ class RegistrationController extends Controller
                 $validated['source'],
                 $validated['bpjs_antrian_id'] ?? null,
                 $validated['no_sep'] ?? null,
+                $validated['visit_type'] ?? null,
             );
 
             return redirect()->route('registration.index')

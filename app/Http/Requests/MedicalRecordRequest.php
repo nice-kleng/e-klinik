@@ -19,7 +19,7 @@ class MedicalRecordRequest extends FormRequest
             'doctor_id' => 'required|integer|exists:doctors,id',
             'queue_id' => 'nullable|integer|exists:queues,id',
             'visit_date' => 'nullable|date',
-            'visit_type' => 'required|string|in:baru,lama,kontrol,rujukan',
+            'visit_type' => 'required|string|in:Baru,Lama,Kontrol,Rujukan',
             'subjective_complaint' => 'nullable|string',
             'objective_finding' => 'nullable|string',
             'assessment' => 'nullable|string',

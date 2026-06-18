@@ -164,6 +164,24 @@ class ConditionService
     {
         $diagnoses = [];
 
+        // Prefer normalized pivot table records
+        $pivotDiagnoses = $mr->diagnoses()->with('icd10Diagnosis')->orderBy('type')->orderBy('order')->get();
+
+        if ($pivotDiagnoses->isNotEmpty()) {
+            foreach ($pivotDiagnoses as $pd) {
+                $diag = $pd->icd10Diagnosis;
+                if ($diag) {
+                    $diagnoses[] = [
+                        'code' => $diag->code,
+                        'name' => $diag->name,
+                        'note' => $pd->notes ?? ($pd->type === 'primary' ? 'Primary diagnosis' : 'Secondary diagnosis'),
+                    ];
+                }
+            }
+            return $diagnoses;
+        }
+
+        // Fallback to legacy string columns
         if (!empty($mr->diagnosis_primary)) {
             $diagnoses[] = [
                 'code' => $mr->diagnosis_primary,

@@ -58,6 +58,7 @@ class QueueService
         string $source,
         ?string $bpjsAntrianId = null,
         ?string $noSep = null,
+        ?string $visitType = null,
     ): array {
         $date = now()->toDateString();
         $sequence = $this->getNextSequence($polyclinic, $date);
@@ -68,6 +69,10 @@ class QueueService
             now()
         );
 
+        $prevCount = Registration::where('patient_id', $patient->id)->count();
+        $visitType = $visitType ?? ($prevCount === 0 ? 'Baru' : 'Lama');
+        $visitSequence = $prevCount + 1;
+
         $registration = Registration::create([
             'registration_number' => Registration::generateNumber(),
             'patient_id' => $patient->id,
@@ -76,6 +81,8 @@ class QueueService
             'registration_date' => $date,
             'source' => $source,
             'service_status' => 'registered',
+            'visit_type' => $visitType,
+            'visit_sequence' => $visitSequence,
             'bpjs_antrian_id' => $bpjsAntrianId,
             'no_sep' => $noSep,
             'age_text' => $age['text'],
