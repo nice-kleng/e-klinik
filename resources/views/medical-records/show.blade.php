@@ -8,6 +8,7 @@
         $mr = $medicalRecord;
         $education = $mr->education;
         $summary = $reg?->summary;
+        $consentTypes = ['general' => 'Persetujuan Umum', 'procedure' => 'Tindakan Medis', 'surgery' => 'Operasi', 'anesthesia' => 'Anestesi', 'transfusion' => 'Transfusi Darah', 'other' => 'Lainnya'];
     @endphp
 
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -629,6 +630,47 @@
                         <a href="{{ route('visit-summary.show', $summary) }}" class="btn btn-sm btn-outline-info">Detail</a>
                         <a href="{{ route('letters.sick-leave', $reg) }}" target="_blank" class="btn btn-sm btn-outline-danger">Surat Sakit</a>
                         <a href="{{ route('letters.health-certificate', $reg) }}" target="_blank" class="btn btn-sm btn-outline-success">Surat Sehat</a>
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            {{-- Informed Consent --}}
+            @php $consents = $mr->informedConsents; @endphp
+            @if($consents->isNotEmpty())
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-file-signature me-1 text-primary"></i>Informed Consent</h6>
+                    <a href="{{ route('informed-consents.create', ['medical_record_id' => $mr->id, 'patient_id' => $mr->patient_id, 'registration_id' => $reg?->id]) }}" class="btn btn-sm btn-success">
+                        <i class="fas fa-plus me-1"></i>Baru
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light">
+                                <tr><th>Tipe</th><th>Tindakan</th><th>Status</th><th>TTD Pasien</th><th>TTD Dokter</th><th>Aksi</th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach($consents as $ic)
+                                    <tr>
+                                        <td class="small">{{ $consentTypes[$ic->consent_type] ?? $ic->consent_type }}</td>
+                                        <td class="small">{{ $ic->procedure_name ?? ($ic->procedureIcd9?->name ?? '-') }}</td>
+                                        <td>
+                                            @php $icBadge = match($ic->status) { 'draft'=>'bg-secondary','signed'=>'bg-success','cancelled'=>'bg-danger', default=>'bg-warning' }; @endphp
+                                            <span class="badge {{ $icBadge }}">{{ $ic->status }}</span>
+                                        </td>
+                                        <td class="small">{{ $ic->patient_signed_at ? $ic->patient_signed_at->format('d/m/Y H:i') : '-' }}</td>
+                                        <td class="small">{{ $ic->signed_at ? $ic->signed_at->format('d/m/Y H:i') : '-' }}</td>
+                                        <td>
+                                            <a href="{{ route('informed-consents.show', $ic) }}" class="btn btn-sm btn-outline-primary" title="Detail">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

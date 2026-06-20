@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Services\BrowserTtsProvider;
 use App\Services\GoogleCloudTtsProvider;
+use App\Services\InformedConsentService;
 use App\Services\TtsProvider;
 use App\Services\BPJS\AntrolService;
 use App\Services\BPJS\BPJSHttpClient;
@@ -86,6 +87,11 @@ class IntegrationServiceProvider extends ServiceProvider
 
         $this->app->singleton(TerminologyService::class, function ($app) {
             return new TerminologyService($app->make(SatuSehatClient::class));
+        });
+
+        // Informed Consent Service
+        $this->app->singleton(InformedConsentService::class, function ($app) {
+            return new InformedConsentService($app->make(\App\Services\TteService::class));
         });
     }
 

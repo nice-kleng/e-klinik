@@ -131,6 +131,11 @@ class MedicalRecord extends Model
         return $this->hasMany(MedicalRecordAudit::class)->latest('created_at');
     }
 
+    public function informedConsents(): HasMany
+    {
+        return $this->hasMany(InformedConsent::class);
+    }
+
     public function procedures(): HasMany
     {
         return $this->hasMany(MedicalRecordProcedure::class)->orderBy('order');

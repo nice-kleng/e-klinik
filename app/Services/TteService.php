@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\InformedConsent;
 use App\Models\MedicalRecord;
 use App\Models\User;
 use RuntimeException;
@@ -46,24 +47,50 @@ class TteService
         return hash_equals($mr->signature_hash, $this->generateHash($mr));
     }
 
-    public function generateHash(MedicalRecord $mr): string
+    public function generateHash(MedicalRecord|InformedConsent $entity): string
+    {
+        if ($entity instanceof InformedConsent) {
+            return $this->generateConsentHash($entity);
+        }
+
+        $data = [
+            $entity->patient_id,
+            $entity->visit_date?->format('Y-m-d'),
+            $entity->subjective_complaint,
+            $entity->anamnesis,
+            $entity->objective_finding,
+            $entity->physical_exam,
+            $entity->assessment,
+            $entity->differential_diagnosis,
+            $entity->plan,
+            $entity->diagnosis_primary_id,
+            json_encode($entity->diagnosis_secondary_ids ?? []),
+            json_encode($entity->diagnosis_differential_ids ?? []),
+            json_encode($entity->procedure_ids ?? []),
+            $entity->notes,
+            $entity->created_at?->toIso8601String(),
+        ];
+
+        return hash('sha256', implode('|', $data));
+    }
+
+    protected function generateConsentHash(InformedConsent $consent): string
     {
         $data = [
-            $mr->patient_id,
-            $mr->visit_date?->format('Y-m-d'),
-            $mr->subjective_complaint,
-            $mr->anamnesis,
-            $mr->objective_finding,
-            $mr->physical_exam,
-            $mr->assessment,
-            $mr->differential_diagnosis,
-            $mr->plan,
-            $mr->diagnosis_primary_id,
-            json_encode($mr->diagnosis_secondary_ids ?? []),
-            json_encode($mr->diagnosis_differential_ids ?? []),
-            json_encode($mr->procedure_ids ?? []),
-            $mr->notes,
-            $mr->created_at?->toIso8601String(),
+            $consent->patient_id,
+            $consent->consent_type,
+            $consent->procedure_name ?? '',
+            (string) $consent->procedure_icd9_id,
+            $consent->diagnosis ?? '',
+            $consent->purpose ?? '',
+            $consent->risks ?? '',
+            $consent->benefits ?? '',
+            $consent->alternatives ?? '',
+            $consent->doctor_recommendation ?? '',
+            $consent->patient_name ?? '',
+            $consent->patient_signed_at?->toIso8601String() ?? '',
+            $consent->witness_name ?? '',
+            $consent->created_at?->toIso8601String(),
         ];
 
         return hash('sha256', implode('|', $data));

@@ -181,7 +181,7 @@ class MedicalRecordController extends Controller
 
     public function show(MedicalRecord $medicalRecord): View
     {
-        $medicalRecord->load(['patient', 'doctor', 'polyclinic', 'queue', 'prescriptions.items.medicine', 'creator', 'diagnoses.icd10Diagnosis', 'procedures.icd9CmDiagnosis']);
+        $medicalRecord->load(['patient', 'doctor', 'polyclinic', 'queue', 'prescriptions.items.medicine', 'creator', 'diagnoses.icd10Diagnosis', 'procedures.icd9CmDiagnosis', 'informedConsents.procedureIcd9', 'informedConsents.signer']);
 
         $previousRecords = MedicalRecord::with(['polyclinic', 'doctor', 'registration'])
             ->where('patient_id', $medicalRecord->patient_id)
@@ -209,6 +209,7 @@ class MedicalRecordController extends Controller
             'medicalRecord.diagnoses.icd10Diagnosis',
             'medicalRecord.procedures.icd9CmDiagnosis',
             'medicalRecord.labRequests',
+            'medicalRecord.informedConsents.procedureIcd9',
         ]);
 
         $patientId = $queue->registration?->patient_id;

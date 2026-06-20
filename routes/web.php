@@ -23,6 +23,7 @@ use App\Http\Controllers\Web\VisitSummaryController;
 use App\Http\Controllers\Web\LetterController;
 use App\Http\Controllers\Web\AuditTrailController;
 use App\Http\Controllers\Web\AttachmentController;
+use App\Http\Controllers\Web\InformedConsentController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -104,6 +105,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Audit Trail — admin, doctor
     Route::get('audit-trail', [AuditTrailController::class, 'index'])
         ->name('audit-trail.index')
+        ->middleware('role:admin|doctor');
+
+    // Informed Consent — admin, doctor (verify route before resource to avoid capture)
+    Route::get('informed-consents/verify/{hash}', [InformedConsentController::class, 'verifyPdf'])
+        ->name('informed-consents.verify');
+    Route::get('informed-consents/procedures', [InformedConsentController::class, 'proceduresByMedicalRecord'])
+        ->name('informed-consents.procedures')
+        ->middleware('role:admin|doctor');
+    Route::post('informed-consents/{informedConsent}/sign-patient', [InformedConsentController::class, 'signPatient'])
+        ->name('informed-consents.sign-patient')
+        ->middleware('role:admin|doctor');
+    Route::post('informed-consents/{informedConsent}/sign-doctor', [InformedConsentController::class, 'signDoctor'])
+        ->name('informed-consents.sign-doctor')
+        ->middleware('role:admin|doctor');
+    Route::get('informed-consents/{informedConsent}/pdf', [InformedConsentController::class, 'downloadPdf'])
+        ->name('informed-consents.pdf')
+        ->middleware('role:admin|doctor');
+    Route::resource('informed-consents', InformedConsentController::class)
+        ->except(['destroy'])
+        ->middleware('role:admin|doctor');
+    Route::delete('informed-consents/{informed_consent}', [InformedConsentController::class, 'destroy'])
+        ->name('informed-consents.destroy')
         ->middleware('role:admin|doctor');
 
     // Diagnoses (ICD-10) — admin, doctor

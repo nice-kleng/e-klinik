@@ -118,6 +118,14 @@
             <span class="sidebar-text">Audit Trail</span>
         </a>
     </li>
+    <li class="nav-item {{ request()->routeIs('informed-consents.*') ? 'active' : '' }}">
+        <a href="{{ route('informed-consents.index') }}" class="nav-link">
+            <span class="sidebar-icon">
+                <i class="fas fa-file-signature fa-fw me-2"></i>
+            </span>
+            <span class="sidebar-text">Informed Consent</span>
+        </a>
+    </li>
     @endrole
 
     @role('admin|receptionist|doctor')

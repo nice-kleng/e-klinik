@@ -18,6 +18,7 @@ class MedicalRecordProcedure extends Model
         'status',
         'informed_consent',
         'informed_consent_file',
+        'informed_consent_id',
     ];
 
     protected function casts(): array
@@ -41,5 +42,10 @@ class MedicalRecordProcedure extends Model
     public function operator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'operator_id');
+    }
+
+    public function informedConsent(): BelongsTo
+    {
+        return $this->belongsTo(InformedConsent::class, 'informed_consent_id');
     }
 }
