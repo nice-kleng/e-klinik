@@ -6,6 +6,7 @@ use App\Models\InformedConsent;
 use App\Models\MedicalRecord;
 use App\Models\User;
 use RuntimeException;
+use Illuminate\Support\Facades\DB;
 
 class TteService
 {
@@ -53,21 +54,34 @@ class TteService
             return $this->generateConsentHash($entity);
         }
 
+        $primary = $entity->diagnoses()->where('type', 'primary')->first();
+        $secondaryIds = $entity->diagnoses()->where('type', 'secondary')->pluck('icd10_diagnosis_id')->toArray();
+        $differentialIds = $entity->diagnoses()->where('type', 'differential')->pluck('icd10_diagnosis_id')->toArray();
+        $procedureIds = $entity->procedures()->pluck('icd9_cm_diagnosis_id')->toArray();
+
         $data = [
             $entity->patient_id,
+            $entity->doctor_id,
+            $entity->polyclinic_id,
             $entity->visit_date?->format('Y-m-d'),
+            $entity->visit_type,
             $entity->subjective_complaint,
             $entity->anamnesis,
+            $entity->past_history,
+            $entity->medication_history,
             $entity->objective_finding,
             $entity->physical_exam,
+            $entity->vital_signs ? json_encode($entity->vital_signs) : '',
             $entity->assessment,
             $entity->differential_diagnosis,
             $entity->plan,
-            $entity->diagnosis_primary_id,
-            json_encode($entity->diagnosis_secondary_ids ?? []),
-            json_encode($entity->diagnosis_differential_ids ?? []),
-            json_encode($entity->procedure_ids ?? []),
+            $primary?->icd10_diagnosis_id,
+            json_encode($secondaryIds),
+            json_encode($differentialIds),
+            json_encode($procedureIds),
+            $entity->specialist_data ? json_encode($entity->specialist_data) : '',
             $entity->notes,
+            $entity->follow_up_date?->format('Y-m-d'),
             $entity->created_at?->toIso8601String(),
         ];
 

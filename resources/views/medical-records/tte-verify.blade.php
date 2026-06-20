@@ -8,10 +8,14 @@
                 <div class="card border-0 shadow-sm">
                     <div class="card-body text-center py-5">
                         <div class="mb-3">
-                            <i class="fas fa-check-circle fa-4x text-success"></i>
+                            <i class="fas {{ $isIntegrityValid ? 'fa-check-circle text-success' : 'fa-exclamation-triangle text-warning' }} fa-4x"></i>
                         </div>
-                        <h3 class="text-success mb-2">✓ Dokumen SAH</h3>
-                        <p class="text-muted mb-4">Tanda tangan elektronik telah terverifikasi</p>
+                        <h3 class="{{ $isIntegrityValid ? 'text-success' : 'text-warning' }} mb-2">
+                            {{ $isIntegrityValid ? '✓ Dokumen SAH' : '! Dokumen TELAH DIUBAH' }}
+                        </h3>
+                        <p class="text-muted mb-4">
+                            {{ $isIntegrityValid ? 'Tanda tangan elektronik telah terverifikasi' : 'Hash dokumen tidak sesuai — data telah berubah setelah ditandatangani' }}
+                        </p>
 
                         <div class="text-start bg-light rounded p-4 mb-4">
                             <table class="table table-sm mb-0">

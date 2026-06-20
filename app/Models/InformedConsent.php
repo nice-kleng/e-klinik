@@ -27,6 +27,7 @@ class InformedConsent extends Model
         'patient_name',
         'patient_agreed',
         'patient_signed_at',
+        'patient_signature_hash',
         'witness_name',
         'status',
         'signature_hash',

@@ -23,4 +23,12 @@ class EducationService
             return $education;
         });
     }
+
+    public function update(PatientEducation $education, array $data): PatientEducation
+    {
+        return DB::transaction(function () use ($education, $data) {
+            $education->update($data);
+            return $education->fresh();
+        });
+    }
 }

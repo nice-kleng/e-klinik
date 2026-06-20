@@ -22,7 +22,7 @@
                                 <option value="{{ $mr->id }}"
                                     data-patient-id="{{ $mr->patient_id }}"
                                     data-patient-name="{{ $mr->patient->name }}"
-                                    @selected(old('medical_record_id') == $mr->id)>
+                                    @selected(old('medical_record_id', $selectedMedicalRecordId) == $mr->id)>
                                     {{ $mr->id }} - {{ $mr->patient->name ?? 'N/A' }} ({{ $mr->created_at->format('d/m/Y') }})
                                 </option>
                             @endforeach
@@ -34,7 +34,7 @@
                         <select name="patient_id" class="form-select @error('patient_id') is-invalid @enderror" required id="patientSelect">
                             <option value="">Pilih Pasien</option>
                             @foreach($patients as $patient)
-                                <option value="{{ $patient->id }}" @selected(old('patient_id') == $patient->id)>
+                                <option value="{{ $patient->id }}" @selected(old('patient_id', $selectedPatientId) == $patient->id)>
                                     {{ $patient->no_rm }} - {{ $patient->name }}
                                 </option>
                             @endforeach

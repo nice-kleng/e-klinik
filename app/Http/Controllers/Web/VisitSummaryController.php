@@ -29,6 +29,39 @@ class VisitSummaryController extends Controller
         return view('visit-summary.create', compact('registration', 'mr'));
     }
 
+    public function edit(VisitSummary $visitSummary): View
+    {
+        $visitSummary->load(['registration.patient', 'registration.polyclinic', 'registration.doctor']);
+
+        return view('visit-summary.edit', compact('visitSummary'));
+    }
+
+    public function update(Request $request, VisitSummary $visitSummary): RedirectResponse
+    {
+        $validated = $request->validate([
+            'final_diagnosis' => 'nullable|string',
+            'discharge_status' => 'required|in:sembuh,dirujuk,pulang_paksa,meninggal,lainnya',
+            'follow_up_plan' => 'nullable|string',
+            'referral_notes' => 'nullable|string',
+            'referral_to' => 'nullable|string|max:255',
+            'sick_leave_days' => 'nullable|integer|min:0|max:365',
+            'sick_leave_from' => 'nullable|date',
+            'sick_leave_to' => 'nullable|date',
+            'notes' => 'nullable|string',
+        ]);
+
+        try {
+            $this->summaryService->update($visitSummary, $validated);
+
+            return redirect()->route('visit-summary.show', $visitSummary)
+                ->with('success', 'Resume kunjungan berhasil diperbarui');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Gagal memperbarui resume: ' . $e->getMessage());
+        }
+    }
+
     public function store(Request $request, Registration $registration): RedirectResponse
     {
         $validated = $request->validate([

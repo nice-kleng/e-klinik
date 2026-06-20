@@ -198,6 +198,12 @@ class MedicalRecordController extends Controller
 
     public function workspace(Queue $queue): View
     {
+        $user = auth()->user();
+        $doctorPolyclinicId = $user->doctor?->polyclinic_id;
+        if (!$user->hasRole('admin') && $doctorPolyclinicId && $queue->registration?->polyclinic_id !== $doctorPolyclinicId) {
+            abort(403, 'Anda hanya bisa mengakses antrean poli sendiri');
+        }
+
         $queue->load([
             'registration.patient',
             'registration.doctor',
@@ -325,7 +331,15 @@ class MedicalRecordController extends Controller
     public function sign(Request $request, MedicalRecord $medicalRecord): JsonResponse
     {
         try {
-            $result = $this->tteService->sign($medicalRecord, auth()->user());
+            $user = auth()->user();
+            if (!$user->hasRole('admin') && $medicalRecord->doctor_id !== $user->doctor?->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak berwenang menandatangani rekam medis ini',
+                ], 403);
+            }
+
+            $result = $this->tteService->sign($medicalRecord, $user);
 
             return response()->json([
                 'success' => true,
@@ -344,7 +358,12 @@ class MedicalRecordController extends Controller
     {
         $medicalRecord = $this->tteService->verify($hash);
 
-        return view('medical-records.tte-verify', compact('medicalRecord'));
+        $isIntegrityValid = false;
+        if ($medicalRecord) {
+            $isIntegrityValid = $this->tteService->verifyIntegrity($medicalRecord);
+        }
+
+        return view('medical-records.tte-verify', compact('medicalRecord', 'isIntegrityValid'));
     }
 
     public function downloadPdf(MedicalRecord $medicalRecord)

@@ -516,7 +516,10 @@
         <div class="tab-pane fade" id="edukasi" role="tabpanel">
             @if($education)
                 <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white"><h6 class="mb-0">Edukasi Pasien</h6></div>
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Edukasi Pasien</h6>
+                        <a href="{{ route('education.edit', $mr) }}" class="btn btn-outline-primary btn-sm"><i class="fas fa-edit me-1"></i>Edit</a>
+                    </div>
                     <div class="card-body">
                         <table class="table table-sm mb-0">
                             @if($education->diagnosis_explained)<tr><td class="text-muted" style="width:140px">Diagnosis</td><td>{{ $education->diagnosis_explained }}</td></tr>@endif

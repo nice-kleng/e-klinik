@@ -15,7 +15,8 @@ class MedicalRecordObserver
         'objective_finding', 'physical_exam', 'vital_signs',
         'assessment', 'differential_diagnosis',
         'plan', 'notes', 'follow_up_date', 'diagnosis_primary', 'diagnosis_secondary',
-        'specialist_data',
+        'specialist_data', 'signed_by', 'signed_at', 'signature_hash', 'is_tte_verified',
+        'visit_date', 'visit_type', 'registration_id',
     ];
 
     public function __construct(
@@ -45,6 +46,7 @@ class MedicalRecordObserver
             try {
                 $this->encounterService->syncEncounter($record);
                 $this->conditionService->syncCondition($record);
+                $this->observationService->syncObservation($record);
             } catch (\Exception $e) {
                 Log::error("Failed to sync medical record {$record->id} update to Satu Sehat: " . $e->getMessage());
             }

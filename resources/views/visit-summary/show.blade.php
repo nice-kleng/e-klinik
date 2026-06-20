@@ -4,7 +4,8 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="mb-0">Resume Kunjungan</h4>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ route('visit-summary.edit', $visitSummary) }}" class="btn btn-warning"><i class="fas fa-edit me-1"></i>Edit</a>
             <a href="{{ route('letters.sick-leave', $visitSummary->registration) }}" class="btn btn-outline-info" target="_blank">Surat Sakit</a>
             <a href="{{ route('letters.health-certificate', $visitSummary->registration) }}" class="btn btn-outline-info" target="_blank">Surat Sehat</a>
             @if($visitSummary->referral_to)

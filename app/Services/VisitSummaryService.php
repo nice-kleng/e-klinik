@@ -20,4 +20,12 @@ class VisitSummaryService
             return $summary;
         });
     }
+
+    public function update(VisitSummary $summary, array $data): VisitSummary
+    {
+        return DB::transaction(function () use ($summary, $data) {
+            $summary->update($data);
+            return $summary->fresh();
+        });
+    }
 }

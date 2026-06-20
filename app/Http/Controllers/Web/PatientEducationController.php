@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\MedicalRecord;
+use App\Models\PatientEducation;
 use App\Services\EducationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -47,6 +48,48 @@ class PatientEducationController extends Controller
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Gagal menyimpan edukasi: ' . $e->getMessage());
+        }
+    }
+
+    public function edit(MedicalRecord $medicalRecord): View
+    {
+        $education = $medicalRecord->education;
+
+        if (!$education) {
+            return redirect()->route('education.create', $medicalRecord)
+                ->with('error', 'Belum ada data edukasi untuk rekam medis ini');
+        }
+
+        return view('patient-education.edit', compact('medicalRecord', 'education'));
+    }
+
+    public function update(Request $request, MedicalRecord $medicalRecord): RedirectResponse
+    {
+        $education = $medicalRecord->education;
+
+        if (!$education) {
+            return redirect()->route('education.create', $medicalRecord)
+                ->with('error', 'Belum ada data edukasi untuk rekam medis ini');
+        }
+
+        $validated = $request->validate([
+            'diagnosis_explained' => 'nullable|string',
+            'medication_instructions' => 'nullable|string',
+            'diet_instructions' => 'nullable|string',
+            'activity_instructions' => 'nullable|string',
+            'follow_up_plan' => 'nullable|string',
+            'education_date' => 'required|date',
+        ]);
+
+        try {
+            $this->educationService->update($education, $validated);
+
+            return redirect()->route('medical-records.show', $medicalRecord)
+                ->with('success', 'Edukasi pasien berhasil diperbarui');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Gagal memperbarui edukasi: ' . $e->getMessage());
         }
     }
 }

@@ -12,7 +12,7 @@ class LabRequest extends Model
     use HasCreatedBy;
     protected $fillable = [
         'medical_record_id', 'patient_id', 'doctor_id',
-        'notes', 'status', 'created_by',
+        'request_number', 'notes', 'status', 'created_by',
     ];
 
     protected function casts(): array

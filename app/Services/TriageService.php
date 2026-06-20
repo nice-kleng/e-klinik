@@ -10,6 +10,10 @@ class TriageService
 {
     public function create(array $data): Triage
     {
+        if (Triage::where('registration_id', $data['registration_id'])->exists()) {
+            throw new \RuntimeException('Pasien sudah memiliki data triage');
+        }
+
         return DB::transaction(function () use ($data) {
             $triage = Triage::create($data);
 

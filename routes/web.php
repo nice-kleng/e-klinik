@@ -217,12 +217,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('medical-records/{medicalRecord}/education')->name('education.')->middleware('role:admin|doctor')->group(function () {
         Route::get('/create', [PatientEducationController::class, 'create'])->name('create');
         Route::post('/', [PatientEducationController::class, 'store'])->name('store');
+        Route::get('/edit', [PatientEducationController::class, 'edit'])->name('edit');
+        Route::put('/', [PatientEducationController::class, 'update'])->name('update');
     });
 
     // ─── Resume Kunjungan ─────────────────────────────────
     Route::prefix('registration/{registration}/summary')->name('visit-summary.')->middleware('role:admin|doctor')->group(function () {
         Route::get('/create', [VisitSummaryController::class, 'create'])->name('create');
         Route::post('/', [VisitSummaryController::class, 'store'])->name('store');
+    });
+    Route::middleware('role:admin|doctor')->group(function () {
+        Route::get('/summary/{visitSummary}/edit', [VisitSummaryController::class, 'edit'])->name('visit-summary.edit');
+        Route::put('/summary/{visitSummary}', [VisitSummaryController::class, 'update'])->name('visit-summary.update');
     });
     Route::get('/summary/{visitSummary}', [VisitSummaryController::class, 'show'])
         ->name('visit-summary.show')

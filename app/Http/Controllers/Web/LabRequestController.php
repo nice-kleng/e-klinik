@@ -38,13 +38,24 @@ class LabRequestController extends Controller
         return view('lab-requests.index', compact('requests'));
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         $patients = Patient::orderBy('name')->get();
-        $medicalRecords = MedicalRecord::with('patient')->orderByDesc('created_at')->get();
         $labTests = LabTest::with('category')->where('is_active', true)->orderBy('name')->get();
 
-        return view('lab-requests.create', compact('patients', 'medicalRecords', 'labTests'));
+        $selectedMedicalRecordId = $request->get('medical_record_id');
+        $selectedPatientId = null;
+
+        if ($selectedMedicalRecordId) {
+            $medicalRecords = MedicalRecord::with('patient')
+                ->where('id', $selectedMedicalRecordId)
+                ->get();
+            $selectedPatientId = $medicalRecords->first()?->patient_id;
+        } else {
+            $medicalRecords = MedicalRecord::with('patient')->orderByDesc('created_at')->get();
+        }
+
+        return view('lab-requests.create', compact('patients', 'medicalRecords', 'labTests', 'selectedMedicalRecordId', 'selectedPatientId'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -59,10 +70,14 @@ class LabRequestController extends Controller
 
         try {
             DB::transaction(function () use ($validated) {
+                $todayCount = LabRequest::whereDate('created_at', today())->count();
+                $requestNumber = 'LAB-' . now()->format('Ymd') . '-' . str_pad($todayCount + 1, 3, '0', STR_PAD_LEFT);
+
                 $labRequest = LabRequest::create([
                     'medical_record_id' => $validated['medical_record_id'],
                     'patient_id' => $validated['patient_id'],
                     'doctor_id' => Auth::user()->doctor?->id,
+                    'request_number' => $requestNumber,
                     'notes' => $validated['notes'] ?? null,
                     'status' => 'requested',
                     'created_by' => Auth::id(),

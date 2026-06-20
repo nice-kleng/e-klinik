@@ -125,6 +125,10 @@ class MedicalRecordService
 
     public function updateRecord(MedicalRecord $mr, array $data): MedicalRecord
     {
+        if ($mr->signed_by) {
+            throw new \RuntimeException('Rekam medis sudah ditandatangani dan tidak bisa diedit. Batalkan TTE terlebih dahulu.');
+        }
+
         return DB::transaction(function () use ($mr, $data) {
             if (isset($data['vital_signs']) && is_array($data['vital_signs'])) {
                 $data['vital_signs'] = $this->normalizeVitalSigns($data['vital_signs']);
@@ -430,6 +434,17 @@ class MedicalRecordService
 
         if (isset($signs['temperature']) && $signs['temperature'] !== null) {
             $signs['temperature'] = is_numeric($signs['temperature']) ? (float) $signs['temperature'] : null;
+        }
+
+        // Parse blood_pressure string "120/80" into systolic/diastolic
+        if (isset($signs['blood_pressure']) && is_string($signs['blood_pressure']) && str_contains($signs['blood_pressure'], '/')) {
+            $parts = explode('/', $signs['blood_pressure']);
+            if (!isset($signs['systolic']) || !$signs['systolic']) {
+                $signs['systolic'] = isset($parts[0]) && is_numeric($parts[0]) ? (float) $parts[0] : null;
+            }
+            if (!isset($signs['diastolic']) || !$signs['diastolic']) {
+                $signs['diastolic'] = isset($parts[1]) && is_numeric($parts[1]) ? (float) $parts[1] : null;
+            }
         }
 
         if (isset($signs['systolic'], $signs['weight'], $signs['height']) && $signs['height'] > 0) {

@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\InformedConsent;
+use App\Models\MedicalRecordProcedure;
 use App\Services\TteService;
 use Illuminate\Support\Facades\DB;
 
@@ -57,13 +59,23 @@ class InformedConsentService
             throw new \RuntimeException('Pasien sudah menandatangani consent ini');
         }
 
-        $consent->update([
-            'patient_name' => $patientName,
-            'patient_agreed' => true,
-            'patient_signed_at' => now(),
-        ]);
+        if ($consent->status === 'cancelled') {
+            throw new \RuntimeException('Informed consent sudah dibatalkan, tidak bisa ditandatangani');
+        }
 
-        return $consent->fresh();
+        return DB::transaction(function () use ($consent, $patientName) {
+            $consent->update([
+                'patient_name' => $patientName,
+                'patient_agreed' => true,
+                'patient_signed_at' => now(),
+            ]);
+
+            $fresh = $consent->fresh();
+            $fresh->patient_signature_hash = $this->tteService->generateHash($fresh);
+            $fresh->save();
+
+            return $fresh;
+        });
     }
 
     public function signDoctor(InformedConsent $consent, \App\Models\User $user): InformedConsent
