@@ -55,6 +55,11 @@ class MedicalRecordService
                 $data['vital_signs'] = $this->normalizeVitalSigns($data['vital_signs']);
             }
 
+            // Normalize specialist_data: decode JSON strings to arrays (e.g. odontogram)
+            if (isset($data['specialist_data']) && is_array($data['specialist_data'])) {
+                $data['specialist_data'] = $this->normalizeSpecialistData($data['specialist_data']);
+            }
+
             // Auto-set registration_id from queue if not provided
             if (empty($data['registration_id']) && !empty($data['queue_id'])) {
                 $queue = \App\Models\Queue::find($data['queue_id']);
@@ -121,6 +126,11 @@ class MedicalRecordService
 
             if (isset($data['follow_up_date']) && is_string($data['follow_up_date'])) {
                 $data['follow_up_date'] = Carbon::parse($data['follow_up_date'])->toDateString();
+            }
+
+            // Normalize specialist_data: decode JSON strings to arrays
+            if (isset($data['specialist_data']) && is_array($data['specialist_data'])) {
+                $data['specialist_data'] = $this->normalizeSpecialistData($data['specialist_data']);
             }
 
             $mr->update($data);
@@ -409,5 +419,17 @@ class MedicalRecordService
         }
 
         return $signs;
+    }
+
+    protected function normalizeSpecialistData(array $data): array
+    {
+        foreach ($data as $key => $value) {
+            if (is_string($value) && str_starts_with($value, '{') && json_decode($value) !== null) {
+                $data[$key] = json_decode($value, true);
+            } elseif (is_array($value)) {
+                $data[$key] = $this->normalizeSpecialistData($value);
+            }
+        }
+        return $data;
     }
 }

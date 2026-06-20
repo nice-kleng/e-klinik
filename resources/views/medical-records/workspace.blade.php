@@ -412,8 +412,8 @@
                                         <td>{{ $proc->operator?->name ?? '-' }}</td>
                                         <td class="text-muted">{{ $proc->notes ?? '-' }}</td>
                                         <td>
-                                            @php $ps = match($proc->status) { 'planned'=>'bg-secondary','done'=>'bg-success','cancelled'=>'bg-danger', default=>'bg-secondary' }; @endphp
-                                            <span class="badge {{ $ps }}">{{ $proc->status ?? 'planned' }}</span>
+                                            @php $ps = match($proc->status) { 'ordered'=>'bg-info','in_progress'=>'bg-warning','completed'=>'bg-success','cancelled'=>'bg-danger', default=>'bg-secondary' }; @endphp
+                                            <span class="badge {{ $ps }}">{{ $proc->status ?? 'ordered' }}</span>
                                         </td>
                                     </tr>
                                 @endforeach

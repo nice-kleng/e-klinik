@@ -60,9 +60,7 @@
                             <td>{{ $queue->queue_date?->format('d/m/Y') }}</td>
                             <td>
                                 @if($mr && $mr->primaryDiagnosis)
-                                    @foreach($mr->primaryDiagnosis as $diag)
-                                        <span class="badge bg-info">{{ $diag->icd10Diagnosis->name }}</span>
-                                    @endforeach
+                                    <span class="badge bg-info">{{ $mr->primaryDiagnosis->icd10Diagnosis->name }}</span>
                                 @else
                                     <span class="text-muted">-</span>
                                 @endif

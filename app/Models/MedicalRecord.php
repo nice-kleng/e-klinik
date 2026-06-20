@@ -107,9 +107,9 @@ class MedicalRecord extends Model
         return $this->hasMany(MedicalRecordDiagnosis::class)->orderBy('type')->orderBy('order');
     }
 
-    public function primaryDiagnosis(): HasMany
+    public function primaryDiagnosis(): HasOne
     {
-        return $this->hasMany(MedicalRecordDiagnosis::class)->where('type', 'primary')->take(1);
+        return $this->hasOne(MedicalRecordDiagnosis::class)->where('type', 'primary');
     }
 
     public function secondaryDiagnoses(): HasMany

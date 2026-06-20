@@ -234,11 +234,11 @@ class MedicalRecordController extends Controller
     public function update(Request $request, MedicalRecord $medicalRecord): RedirectResponse
     {
         $validated = $request->validate([
+            'registration_id' => 'nullable|exists:registrations,id',
             'doctor_id' => 'required|exists:doctors,id',
             'polyclinic_id' => 'required|exists:polyclinics,id',
             'visit_date' => 'required|date',
             'visit_type' => 'nullable|string|in:Baru,Lama,Kontrol,Rujukan',
-            'subjective_complaint' => 'nullable|string',
             'subjective_complaint' => 'required|string',
             'objective_finding' => 'nullable|string',
             'assessment' => 'required|string',

@@ -268,25 +268,59 @@
                     <div class="card-header bg-white"><h6 class="mb-0"><i class="fas fa-microscope me-1 text-primary"></i>Pemeriksaan Spesialis ({{ $mr->polyclinic?->name }})</h6></div>
                     <div class="card-body">
                         @if($code === 'PDL')
-                            @foreach(['kardiovaskuler'=>'Kardiovaskuler','respirasi'=>'Respirasi','gastrointestinal'=>'Gastrointestinal','hepatobilier'=>'Hepatobilier','renal'=>'Renal / Urologi','endokrin'=>'Endokrin & Metabolik','muskuloskeletal'=>'Muskuloskeletal','imunologi'=>'Imunologi / Alergi','hematologi'=>'Hematologi','infeksi'=>'Infeksi','neurologi'=>'Neurologi'] as $key => $label)
-                                @if(!empty($sd[$key]))
-                                    <h6 class="text-muted small">{{ $label }}</h6>
-                                    <p>{{ $sd[$key] }}</p>
-                                @endif
-                            @endforeach
+                            @php
+                                $organLabels = [
+                                    'kardiovaskular'=>'Kardiovaskular','respirasi'=>'Respirasi','gastrointestinal'=>'Gastrointestinal',
+                                    'hepatobilier'=>'Hepatobilier','urogenital'=>'Urogenital','muskuloskeletal'=>'Muskuloskeletal',
+                                    'neurologi'=>'Neurologi','endokrin'=>'Endokrin & Metabolik','hematologi'=>'Hematologi',
+                                    'integumen'=>'Integumen','psikiatri'=>'Psikiatri',
+                                ];
+                            @endphp
+                            @if(!empty($sd['sistem_organ']))
+                                <h6 class="text-muted small">Anamnesis Sistem Organ</h6>
+                                @foreach($organLabels as $key => $label)
+                                    @if(!empty($sd['sistem_organ'][$key]['checked']) && !empty($sd['sistem_organ'][$key]['notes']))
+                                        <p><strong>{{ $label }}:</strong> {{ $sd['sistem_organ'][$key]['notes'] }}</p>
+                                    @endif
+                                @endforeach
+                            @endif
                             @if(!empty($sd['fisik']))
                                 <h6 class="text-muted small">Pemeriksaan Fisik</h6>
-                                @foreach(['kesadaran'=>'Kesadaran','td'=>'TD','nadi'=>'Nadi','suhu'=>'Suhu','rr'=>'RR','thoraks'=>'Thoraks','abdomen'=>'Abdomen','ekstremitas'=>'Ekstremitas'] as $key => $label)
+                                @php $fisikLabels = ['kesadaran'=>'Kesadaran','td'=>'TD','nadi'=>'Nadi','suhu'=>'Suhu','spo2'=>'SpO₂','status_gizi'=>'Status Gizi']; @endphp
+                                @foreach($fisikLabels as $key => $label)
                                     @if(!empty($sd['fisik'][$key]))
                                         <p><strong>{{ $label }}:</strong> {{ $sd['fisik'][$key] }}</p>
                                     @endif
                                 @endforeach
+                                @php
+                                    $thoraxParts = ['thorax_inspeksi'=>'Inspeksi','thorax_palpasi'=>'Palpasi','thorax_perkusi'=>'Perkusi','thorax_auskultasi'=>'Auskultasi'];
+                                    $abdomenParts = ['abdomen_inspeksi'=>'Inspeksi','abdomen_palpasi'=>'Palpasi','abdomen_perkusi'=>'Perkusi','abdomen_auskultasi'=>'Auskultasi'];
+                                @endphp
+                                @if(array_intersect_key(array_flip(array_keys($thoraxParts)), $sd['fisik']))
+                                    <p class="mb-1"><strong>Thorax:</strong></p>
+                                    @foreach($thoraxParts as $key => $label)
+                                        @if(!empty($sd['fisik'][$key]))
+                                            <p class="ms-3 mb-1"><em>{{ $label }}:</em> {{ $sd['fisik'][$key] }}</p>
+                                        @endif
+                                    @endforeach
+                                @endif
+                                @if(array_intersect_key(array_flip(array_keys($abdomenParts)), $sd['fisik']))
+                                    <p class="mb-1"><strong>Abdomen:</strong></p>
+                                    @foreach($abdomenParts as $key => $label)
+                                        @if(!empty($sd['fisik'][$key]))
+                                            <p class="ms-3 mb-1"><em>{{ $label }}:</em> {{ $sd['fisik'][$key] }}</p>
+                                        @endif
+                                    @endforeach
+                                @endif
+                                @if(!empty($sd['fisik']['ekstremitas']))
+                                    <p><strong>Ekstremitas:</strong> {{ $sd['fisik']['ekstremitas'] }}</p>
+                                @endif
                             @endif
 
                         @elseif($code === 'ANAK')
                             @if(!empty($sd['perinatal']))
                                 <h6 class="text-muted small">Riwayat Perinatal</h6>
-                                @foreach(['usia_kehamilan'=>'Usia Kehamilan','persalinan'=>'Cara Persalinan','bb_lahir'=>'BB Lahir','pb_lahir'=>'PB Lahir','asi'=>'ASI Eksklusif'] as $key => $label)
+                                @foreach(['usia_kehamilan'=>'Usia Kehamilan','jenis_persalinan'=>'Cara Persalinan','bb_lahir'=>'BB Lahir','pb_lahir'=>'PB Lahir','asi_eksklusif'=>'ASI Eksklusif'] as $key => $label)
                                     @if(!empty($sd['perinatal'][$key]))
                                         <p><strong>{{ $label }}:</strong> {{ $sd['perinatal'][$key] }}</p>
                                     @endif
@@ -294,7 +328,19 @@
                             @endif
                             @if(!empty($sd['imunisasi']))
                                 <h6 class="text-muted small">Imunisasi</h6>
-                                <p>{{ is_array($sd['imunisasi']) ? implode(', ', array_keys(array_filter($sd['imunisasi']))) : $sd['imunisasi'] }}</p>
+                                @php $vaksin = []; @endphp
+                                @foreach($sd['imunisasi'] as $key => $val)
+                                    @if(is_array($val) && !empty($val['checked']))
+                                        @php $vaksin[] = ucfirst(str_replace('-', ' ', $key)); @endphp
+                                    @elseif(is_string($val) || is_numeric($val))
+                                        @php $vaksin[] = ucfirst(str_replace('-', ' ', $key)); @endphp
+                                    @endif
+                                @endforeach
+                                @if($vaksin)
+                                    <p>{{ implode(', ', $vaksin) }}</p>
+                                @else
+                                    <p class="text-muted">-</p>
+                                @endif
                             @endif
                             @if(!empty($sd['tumbuh_kembang']))
                                 <h6 class="text-muted small">Tumbuh Kembang</h6>
@@ -314,39 +360,53 @@
                             @endif
 
                         @elseif($code === 'SARAF')
-                            @if(!empty($sd['nervus_cranialis']))
+                            @php
+                                $ncMap = ['nc1'=>'N.I — Olfactorius','nc2'=>'N.II — Opticus','nc3'=>'N.III — Oculomotorius','nc4'=>'N.IV — Trochlearis','nc5'=>'N.V — Trigeminus','nc6'=>'N.VI — Abducens','nc7'=>'N.VII — Facialis','nc8'=>'N.VIII — Vestibulocochlearis','nc9'=>'N.IX — Glossopharyngeus','nc10'=>'N.X — Vagus','nc11'=>'N.XI — Accessorius','nc12'=>'N.XII — Hypoglossus'];
+                                $motorikLabels = ['atas_kanan'=>'Ekstremitas Atas Kanan','atas_kiri'=>'Ekstremitas Atas Kiri','bawah_kanan'=>'Ekstremitas Bawah Kanan','bawah_kiri'=>'Ekstremitas Bawah Kiri'];
+                            @endphp
+                            @if(!empty($sd['nc']))
                                 <h6 class="text-muted small">Nervus Cranialis</h6>
-                                @foreach(range(1,12) as $n)
-                                    @php $key = 'n'.$n; @endphp
-                                    @if(!empty($sd['nervus_cranialis'][$key]['status']))
-                                        <p><strong>N. {{ $n }}:</strong> {{ $sd['nervus_cranialis'][$key]['status'] }}
-                                        @if(!empty($sd['nervus_cranialis'][$key]['notes']))
-                                            <span class="text-muted">— {{ $sd['nervus_cranialis'][$key]['notes'] }}</span>
+                                @foreach($ncMap as $key => $label)
+                                    @if(!empty($sd['nc'][$key]['status']))
+                                        <p><strong>{{ $label }}:</strong> {{ $sd['nc'][$key]['status'] }}
+                                        @if(!empty($sd['nc'][$key]['notes']))
+                                            <span class="text-muted">— {{ $sd['nc'][$key]['notes'] }}</span>
                                         @endif
                                         </p>
                                     @endif
                                 @endforeach
                             @endif
-                            @if(!empty($sd['mrc']))
-                                <h6 class="text-muted small">MRC Scale</h6>
-                                @php $mrcLabels = ['superior_kanan'=>'Ekstremitas Superior Kanan','superior_kiri'=>'Ekstremitas Superior Kiri','inferior_kanan'=>'Ekstremitas Inferior Kanan','inferior_kiri'=>'Ekstremitas Inferior Kiri']; @endphp
-                                @foreach($mrcLabels as $key => $label)
-                                    @if(!empty($sd['mrc'][$key]))
-                                        <p><strong>{{ $label }}:</strong> {{ $sd['mrc'][$key] }}</p>
+                            @if(!empty($sd['motorik']))
+                                <h6 class="text-muted small">MRC Scale (Motorik)</h6>
+                                @foreach($motorikLabels as $key => $label)
+                                    @if(!empty($sd['motorik'][$key]))
+                                        <p><strong>{{ $label }}:</strong> {{ $sd['motorik'][$key] }}</p>
                                     @endif
                                 @endforeach
                             @endif
-                            @if(!empty($sd['sensori']))
+                            @if(!empty($sd['sensorik']))
                                 <h6 class="text-muted small">Pemeriksaan Sensorik</h6>
-                                <p>{{ $sd['sensori'] }}</p>
+                                @foreach(['raba'=>'Raba (taktil)','nyeri'=>'Nyeri (tusuk)','suhu'=>'Suhu (panas/dingin)','vibrasi'=>'Vibrasi (garpu tala)','propriosepsi'=>'Propriosepsi (posisi sendi)'] as $key => $label)
+                                    @if(!empty($sd['sensorik'][$key]))
+                                        <p><strong>{{ $label }}:</strong> {{ $sd['sensorik'][$key] }}</p>
+                                    @endif
+                                @endforeach
                             @endif
                             @if(!empty($sd['refleks']))
                                 <h6 class="text-muted small">Refleks</h6>
-                                <p>{{ $sd['refleks'] }}</p>
+                                @foreach(['fisiologis'=>'Fisiologis','patologis'=>'Patologis','kloni'=>'Kloni'] as $key => $label)
+                                    @if(!empty($sd['refleks'][$key]))
+                                        <p><strong>{{ $label }}:</strong> {{ $sd['refleks'][$key] }}</p>
+                                    @endif
+                                @endforeach
                             @endif
                             @if(!empty($sd['koordinasi']))
                                 <h6 class="text-muted small">Koordinasi & Keseimbangan</h6>
-                                <p>{{ $sd['koordinasi'] }}</p>
+                                @foreach(['finger_nose'=>'Finger-to-Nose','heel_shin'=>'Heel-to-Shin','romberg'=>'Romberg','gait'=>'Cara Jalan'] as $key => $label)
+                                    @if(!empty($sd['koordinasi'][$key]))
+                                        <p><strong>{{ $label }}:</strong> {{ $sd['koordinasi'][$key] }}</p>
+                                    @endif
+                                @endforeach
                             @endif
 
                         @elseif($code === 'RAD')
@@ -441,7 +501,7 @@
                                     <td class="text-muted">{{ $proc->notes ?? '-' }}</td>
                                     <td>
                                         @php
-                                            $pStatus = match($proc->status) { 'planned'=>'bg-secondary','done'=>'bg-success','cancelled'=>'bg-danger','deferred'=>'bg-warning', default=>'bg-secondary' };
+                                            $pStatus = match($proc->status) { 'ordered'=>'bg-info','in_progress'=>'bg-warning','completed'=>'bg-success','cancelled'=>'bg-danger', default=>'bg-secondary' };
                                         @endphp
                                         <span class="badge {{ $pStatus }}">{{ $proc->status ?? 'planned' }}</span>
                                     </td>
