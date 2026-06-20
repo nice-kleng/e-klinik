@@ -248,15 +248,11 @@
                         <h6 class="text-muted small">Assessment</h6>
                         <p>{{ $mr->assessment }}</p>
                     @endif
-                    @if($mr->differential_diagnosis)
-                        <h6 class="text-muted small">Diagnosis Banding</h6>
-                        <p>{{ $mr->differential_diagnosis }}</p>
-                    @endif
-
                     @php
                         $allDiags = $mr->diagnoses()->with('icd10Diagnosis')->orderBy('type')->orderBy('order')->get();
                         $primaryDiag = $allDiags->where('type', 'primary')->first();
                         $secondaryDiags = $allDiags->where('type', 'secondary');
+                        $differentialDiags = $allDiags->where('type', 'differential');
                         $procedures = $mr->procedures()->with('icd9CmDiagnosis')->orderBy('order')->get();
                     @endphp
 
@@ -277,6 +273,15 @@
                         <p>
                             @foreach($secondaryDiags as $sd)
                                 <span class="badge bg-secondary me-1">{{ $sd->icd10Diagnosis->code ?? '#' . $sd->id }}</span>
+                            @endforeach
+                        </p>
+                    @endif
+
+                    @if($differentialDiags->isNotEmpty())
+                        <h6 class="text-muted small">Diagnosis Banding</h6>
+                        <p>
+                            @foreach($differentialDiags as $dd)
+                                <span class="badge bg-warning text-dark me-1">{{ $dd->icd10Diagnosis->code }}</span>
                             @endforeach
                         </p>
                     @endif
@@ -624,6 +629,40 @@
                         <a href="{{ route('visit-summary.show', $summary) }}" class="btn btn-sm btn-outline-info">Detail</a>
                         <a href="{{ route('letters.sick-leave', $reg) }}" target="_blank" class="btn btn-sm btn-outline-danger">Surat Sakit</a>
                         <a href="{{ route('letters.health-certificate', $reg) }}" target="_blank" class="btn btn-sm btn-outline-success">Surat Sehat</a>
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            {{-- Audit Trail --}}
+            @php $audits = $mr->audits()->with('user')->limit(50)->get(); @endphp
+            @if($audits->isNotEmpty())
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="fas fa-clipboard-list me-1 text-muted"></i>Audit Trail</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light">
+                                <tr><th>Waktu</th><th>User</th><th>Aksi</th><th>Field</th><th>Lama</th><th>Baru</th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach($audits as $audit)
+                                    <tr>
+                                        <td class="small text-muted">{{ $audit->created_at?->format('d/m/Y H:i') }}</td>
+                                        <td class="small">{{ $audit->user?->name ?? '-' }}</td>
+                                        <td>
+                                            @php $aBadge = match($audit->action) { 'created'=>'bg-success','updated'=>'bg-info','deleted'=>'bg-danger','restored'=>'bg-warning', default=>'bg-secondary' }; @endphp
+                                            <span class="badge {{ $aBadge }}">{{ $audit->action }}</span>
+                                        </td>
+                                        <td class="small">{{ $audit->field_name ?? '-' }}</td>
+                                        <td class="small text-muted" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ Str::limit($audit->old_value ?? '-', 40) }}</td>
+                                        <td class="small text-muted" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ Str::limit($audit->new_value ?? '-', 40) }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

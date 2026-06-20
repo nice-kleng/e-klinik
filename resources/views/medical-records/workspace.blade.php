@@ -171,6 +171,11 @@
                 <i class="fas fa-history me-1"></i>Riwayat
             </button>
         </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="audit-tab" data-bs-toggle="tab" data-bs-target="#audit" type="button" role="tab">
+                <i class="fas fa-clipboard-list me-1"></i>Audit Trail
+            </button>
+        </li>
     </ul>
 
     <div class="tab-content" id="workspaceTabContent">
@@ -218,11 +223,11 @@
                     <div class="card-header bg-white"><h6 class="mb-0">A — Assessment</h6></div>
                     <div class="card-body">
                         @if($mr->assessment)<h6 class="text-muted small">Assessment</h6><p>{{ $mr->assessment }}</p>@endif
-                        @if($mr->differential_diagnosis)<h6 class="text-muted small">Diagnosis Banding</h6><p>{{ $mr->differential_diagnosis }}</p>@endif
                         @php
                             $allDiags = $mr->diagnoses()->with('icd10Diagnosis')->orderBy('type')->orderBy('order')->get();
                             $primaryDiag = $allDiags->where('type', 'primary')->first();
                             $secondaryDiags = $allDiags->where('type', 'secondary');
+                            $differentialDiags = $allDiags->where('type', 'differential');
                         @endphp
                         @if($primaryDiag)
                             <h6 class="text-muted small">Diagnosis Utama</h6>
@@ -231,6 +236,10 @@
                         @if($secondaryDiags->isNotEmpty())
                             <h6 class="text-muted small">Diagnosis Sekunder</h6>
                             <p>@foreach($secondaryDiags as $sd) <span class="badge bg-secondary me-1">{{ $sd->icd10Diagnosis->code }}</span> @endforeach</p>
+                        @endif
+                        @if($differentialDiags->isNotEmpty())
+                            <h6 class="text-muted small">Diagnosis Banding</h6>
+                            <p>@foreach($differentialDiags as $dd) <span class="badge bg-warning text-dark me-1">{{ $dd->icd10Diagnosis->code }}</span> @endforeach</p>
                         @endif
                     </div>
                 </div>
@@ -551,6 +560,56 @@
                                 @endforeach
                             </tbody>
                         </table>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        {{-- === Tab Audit Trail === --}}
+        <div class="tab-pane fade" id="audit" role="tabpanel">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white"><h6 class="mb-0"><i class="fas fa-clipboard-list me-1"></i>Audit Trail</h6></div>
+                <div class="card-body p-0">
+                    @php $audits = $mr?->audits()->with('user')->limit(100)->get() ?? collect(); @endphp
+                    @if($audits->isNotEmpty())
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Waktu</th>
+                                        <th>User</th>
+                                        <th>Aksi</th>
+                                        <th>Field</th>
+                                        <th>Nilai Lama</th>
+                                        <th>Nilai Baru</th>
+                                        <th>IP</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($audits as $audit)
+                                        <tr>
+                                            <td class="small text-muted">{{ $audit->created_at?->format('d/m/Y H:i') }}</td>
+                                            <td class="small">{{ $audit->user?->name ?? '-' }}</td>
+                                            <td>
+                                                @php
+                                                    $aBadge = match($audit->action) { 'created'=>'bg-success','updated'=>'bg-info','deleted'=>'bg-danger','restored'=>'bg-warning', default=>'bg-secondary' };
+                                                @endphp
+                                                <span class="badge {{ $aBadge }}">{{ $audit->action }}</span>
+                                            </td>
+                                            <td class="small">{{ $audit->field_name ?? '-' }}</td>
+                                            <td class="small text-muted" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ Str::limit($audit->old_value ?? '-', 60) }}</td>
+                                            <td class="small text-muted" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ Str::limit($audit->new_value ?? '-', 60) }}</td>
+                                            <td class="small text-muted">{{ $audit->ip_address ?? '-' }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-clipboard-list fa-2x mb-2 d-block"></i>
+                            Belum ada catatan audit
                         </div>
                     @endif
                 </div>

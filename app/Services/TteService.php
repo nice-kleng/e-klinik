@@ -60,6 +60,7 @@ class TteService
             $mr->plan,
             $mr->diagnosis_primary_id,
             json_encode($mr->diagnosis_secondary_ids ?? []),
+            json_encode($mr->diagnosis_differential_ids ?? []),
             json_encode($mr->procedure_ids ?? []),
             $mr->notes,
             $mr->created_at?->toIso8601String(),

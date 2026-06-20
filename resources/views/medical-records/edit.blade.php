@@ -159,14 +159,23 @@
                         @error('assessment') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Diagnosis Banding</label>
-                        <textarea name="differential_diagnosis" class="form-control @error('differential_diagnosis') is-invalid @enderror" rows="3">{{ old('differential_diagnosis', $medicalRecord->differential_diagnosis) }}</textarea>
-                        @error('differential_diagnosis') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                        <label class="form-label">Diagnosis Banding (ICD-10)</label>
+                        <select name="diagnosis_differential_ids[]" id="diagnosisDifferential" class="form-select select2-icd10" multiple
+                            data-ajax-url="{{ route('medical-records.icd10-search') }}"
+                            data-placeholder="Cari diagnosis banding...">
+                            @foreach($differentialDiags as $dd)
+                                <option value="{{ $dd->icd10_diagnosis_id }}" selected>
+                                    {{ $dd->icd10Diagnosis->code }} — {{ $dd->icd10Diagnosis->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('diagnosis_differential_ids') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                     </div>
 
                     @php
                         $primaryDiag = $medicalRecord->diagnoses()->where('type', 'primary')->with('icd10Diagnosis')->first();
                         $secondaryDiags = $medicalRecord->diagnoses()->where('type', 'secondary')->with('icd10Diagnosis')->get();
+                        $differentialDiags = $medicalRecord->diagnoses()->where('type', 'differential')->with('icd10Diagnosis')->get();
                         $procedures = $medicalRecord->procedures()->with('icd9CmDiagnosis')->orderBy('order')->get();
                     @endphp
 

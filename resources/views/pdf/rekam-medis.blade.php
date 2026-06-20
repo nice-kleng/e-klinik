@@ -74,6 +74,7 @@
         @endif
         @php
             $secondaryDiags = $record->diagnoses?->where('type', 'secondary');
+            $differentialDiags = $record->diagnoses?->where('type', 'differential');
         @endphp
         @if($secondaryDiags?->isNotEmpty())
             <p><strong>Diagnosa Sekunder:</strong>
@@ -82,9 +83,14 @@
                 @endforeach
             </p>
         @endif
-        @if($record->differential_diagnosis)
-            <p><strong>Diagnosis Banding:</strong> {{ $record->differential_diagnosis }}</p>
+        @if($differentialDiags?->isNotEmpty())
+            <p><strong>Diagnosis Banding:</strong>
+                @foreach($differentialDiags as $dd)
+                    {{ $dd->icd10Diagnosis?->code ?? '' }},
+                @endforeach
+            </p>
         @endif
+
     </div>
 
     <div class="section">

@@ -98,6 +98,16 @@ class MedicalRecordService
                 }
             }
 
+            if (!empty($data['diagnosis_differential_ids']) && is_array($data['diagnosis_differential_ids'])) {
+                foreach ($data['diagnosis_differential_ids'] as $order => $id) {
+                    $record->diagnoses()->create([
+                        'icd10_diagnosis_id' => $id,
+                        'type' => 'differential',
+                        'order' => $order,
+                    ]);
+                }
+            }
+
             if (!empty($data['procedure_ids']) && is_array($data['procedure_ids'])) {
                 foreach ($data['procedure_ids'] as $order => $id) {
                     $notes = $data['procedure_notes'][$order] ?? null;
@@ -151,6 +161,17 @@ class MedicalRecordService
                     $mr->diagnoses()->create([
                         'icd10_diagnosis_id' => $id,
                         'type' => 'secondary',
+                        'order' => $order,
+                    ]);
+                }
+            }
+
+            if (isset($data['diagnosis_differential_ids']) && is_array($data['diagnosis_differential_ids'])) {
+                $mr->diagnoses()->where('type', 'differential')->delete();
+                foreach ($data['diagnosis_differential_ids'] as $order => $id) {
+                    $mr->diagnoses()->create([
+                        'icd10_diagnosis_id' => $id,
+                        'type' => 'differential',
                         'order' => $order,
                     ]);
                 }

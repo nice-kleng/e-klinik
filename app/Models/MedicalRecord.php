@@ -121,6 +121,16 @@ class MedicalRecord extends Model
         return $this->hasMany(MedicalRecordDiagnosis::class)->where('type', 'secondary')->orderBy('order');
     }
 
+    public function differentialDiagnoses(): HasMany
+    {
+        return $this->hasMany(MedicalRecordDiagnosis::class)->where('type', 'differential')->orderBy('order');
+    }
+
+    public function audits(): HasMany
+    {
+        return $this->hasMany(MedicalRecordAudit::class)->latest('created_at');
+    }
+
     public function procedures(): HasMany
     {
         return $this->hasMany(MedicalRecordProcedure::class)->orderBy('order');
