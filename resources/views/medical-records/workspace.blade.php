@@ -53,8 +53,11 @@
                 </div>
             </div>
 
-            {{-- Service Status Badge --}}
+            {{-- Service Status Badge + TTE Badge --}}
             <div class="d-flex gap-2 mb-3">
+                @if($mr && $mr->signed_by)
+                    <span class="badge bg-success fs-6"><i class="fas fa-shield-alt me-1"></i>TTE: ✓</span>
+                @endif
                 @php
                     $statusBadge = match($reg?->service_status) {
                         'registered' => 'bg-secondary',

@@ -122,6 +122,31 @@
             </div>
             @endif
 
+            {{-- TTE Card --}}
+            <div class="card border-0 shadow-sm mt-3">
+                <div class="card-body text-center">
+                    @if($mr->signed_by)
+                        <i class="fas fa-shield-alt fa-2x text-success mb-2"></i>
+                        <h6 class="text-success mb-1">✓ Ditandatangani</h6>
+                        <small class="text-muted">
+                            {{ $mr->signer?->name }}<br>
+                            {{ $mr->signed_at?->format('d/m/Y H:i') }}
+                        </small>
+                        <div class="mt-2">
+                            <a href="{{ route('medical-records.pdf', $mr) }}" class="btn btn-sm btn-success">
+                                <i class="fas fa-file-pdf me-1"></i>Download PDF TTE
+                            </a>
+                        </div>
+                    @else
+                        <i class="fas fa-file-signature fa-2x text-muted mb-2"></i>
+                        <h6 class="mb-1">Belum Ditandatangani</h6>
+                        <button class="btn btn-primary btn-sm" onclick="signRme({{ $mr->id }})">
+                            <i class="fas fa-pen me-1"></i>Tanda Tangani Sekarang
+                        </button>
+                    @endif
+                </div>
+            </div>
+
             {{-- Tombol Aksi Cepat --}}
             <div class="d-flex flex-column gap-2 mt-3">
                 @if($reg)
@@ -698,3 +723,28 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+function signRme(id) {
+    if (!confirm('Tanda tangani rekam medis ini? TTE tidak dapat dibatalkan setelah ditandatangani.')) return;
+
+    fetch('{{ route('medical-records.sign', $mr) }}', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json',
+        },
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success) {
+            location.reload();
+        } else {
+            alert(res.message || 'Gagal menandatangani');
+        }
+    })
+    .catch(() => alert('Terjadi kesalahan saat menandatangani'));
+}
+</script>
+@endpush

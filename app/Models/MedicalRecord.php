@@ -39,6 +39,10 @@ class MedicalRecord extends Model
         'follow_up_date',
         'specialist_data',
         'created_by',
+        'signed_by',
+        'signed_at',
+        'signature_hash',
+        'is_tte_verified',
     ];
 
     protected function casts(): array
@@ -125,5 +129,10 @@ class MedicalRecord extends Model
     public function education(): HasOne
     {
         return $this->hasOne(PatientEducation::class, 'medical_record_id');
+    }
+
+    public function signer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'signed_by');
     }
 }

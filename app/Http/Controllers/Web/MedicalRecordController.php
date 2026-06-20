@@ -12,16 +12,21 @@ use App\Models\Polyclinic;
 use App\Models\Queue;
 use App\Models\Registration;
 use App\Services\MedicalRecordService;
+use App\Services\TteService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class MedicalRecordController extends Controller
 {
     protected MedicalRecordService $medicalRecordService;
+
+    protected TteService $tteService;
 
     protected array $specialistPartials = [
         'PDL'  => 'medical-records.partials.spesialis-penyakit-dalam',
@@ -31,9 +36,10 @@ class MedicalRecordController extends Controller
         'GIG'  => 'medical-records.partials.spesialis-gigi',
     ];
 
-    public function __construct(MedicalRecordService $medicalRecordService)
+    public function __construct(MedicalRecordService $medicalRecordService, TteService $tteService)
     {
         $this->medicalRecordService = $medicalRecordService;
+        $this->tteService = $tteService;
     }
 
     private function getSpecialistData(?int $polyclinicId, ?array $existingData = null): array
@@ -309,6 +315,46 @@ class MedicalRecordController extends Controller
             ->get(['id', 'code', 'name']);
 
         return response()->json($procedures)->header('Content-Type', 'application/json');
+    }
+
+    public function sign(Request $request, MedicalRecord $medicalRecord): JsonResponse
+    {
+        try {
+            $result = $this->tteService->sign($medicalRecord, auth()->user());
+
+            return response()->json([
+                'success' => true,
+                'data' => $result,
+                'message' => 'Rekam medis berhasil ditandatangani',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function verifyPdf(string $hash): View
+    {
+        $medicalRecord = $this->tteService->verify($hash);
+
+        return view('medical-records.tte-verify', compact('medicalRecord'));
+    }
+
+    public function downloadPdf(MedicalRecord $medicalRecord)
+    {
+        $medicalRecord->load(['patient', 'doctor', 'polyclinic', 'signer', 'diagnoses.icd10Diagnosis', 'procedures.icd9CmDiagnosis']);
+
+        $qrCodeSvg = null;
+        if ($medicalRecord->signature_hash) {
+            $qrCodeSvg = QrCode::size(80)->generate(route('medical-records.verify', $medicalRecord->signature_hash));
+        }
+
+        return Pdf::loadView('pdf.rekam-medis', [
+            'record' => $medicalRecord,
+            'qrCodeSvg' => $qrCodeSvg,
+        ])->stream('rekam-medis-' . $medicalRecord->id . '.pdf');
     }
 
     public function destroy(MedicalRecord $medicalRecord): RedirectResponse

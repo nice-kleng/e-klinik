@@ -83,12 +83,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('medical-records/workspace/{queue}', [MedicalRecordController::class, 'workspace'])
         ->name('medical-records.workspace')
         ->middleware('role:admin|doctor');
+    Route::post('medical-records/{medicalRecord}/sign', [MedicalRecordController::class, 'sign'])
+        ->name('medical-records.sign')
+        ->middleware('role:admin|doctor');
+    Route::get('medical-records/{medicalRecord}/pdf', [MedicalRecordController::class, 'downloadPdf'])
+        ->name('medical-records.pdf')
+        ->middleware('role:admin|doctor');
     Route::resource('medical-records', MedicalRecordController::class)
         ->except(['destroy'])
         ->middleware('role:admin|doctor');
     Route::delete('medical-records/{medical_record}', [MedicalRecordController::class, 'destroy'])
         ->name('medical-records.destroy')
         ->middleware('role:admin');
+
+    // TTE verification — public (no auth, accessible via QR scan)
+    Route::get('medical-records/verify/{hash}', [MedicalRecordController::class, 'verifyPdf'])
+        ->name('medical-records.verify');
 
     // Diagnoses (ICD-10) — admin, doctor
     Route::get('diagnoses', [DiagnosisController::class, 'index'])
