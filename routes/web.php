@@ -21,6 +21,7 @@ use App\Http\Controllers\Web\TriageController;
 use App\Http\Controllers\Web\PatientEducationController;
 use App\Http\Controllers\Web\VisitSummaryController;
 use App\Http\Controllers\Web\LetterController;
+use App\Http\Controllers\Web\AuditTrailController;
 use App\Http\Controllers\Web\AttachmentController;
 use Illuminate\Support\Facades\Route;
 
@@ -99,6 +100,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // TTE verification — public (no auth, accessible via QR scan)
     Route::get('medical-records/verify/{hash}', [MedicalRecordController::class, 'verifyPdf'])
         ->name('medical-records.verify');
+
+    // Audit Trail — admin, doctor
+    Route::get('audit-trail', [AuditTrailController::class, 'index'])
+        ->name('audit-trail.index')
+        ->middleware('role:admin|doctor');
 
     // Diagnoses (ICD-10) — admin, doctor
     Route::get('diagnoses', [DiagnosisController::class, 'index'])

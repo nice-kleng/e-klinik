@@ -110,6 +110,14 @@
             <span class="sidebar-text">Resep</span>
         </a>
     </li>
+    <li class="nav-item {{ request()->routeIs('audit-trail.*') ? 'active' : '' }}">
+        <a href="{{ route('audit-trail.index') }}" class="nav-link">
+            <span class="sidebar-icon">
+                <i class="fas fa-clipboard-list fa-fw me-2"></i>
+            </span>
+            <span class="sidebar-text">Audit Trail</span>
+        </a>
+    </li>
     @endrole
 
     @role('admin|receptionist|doctor')
