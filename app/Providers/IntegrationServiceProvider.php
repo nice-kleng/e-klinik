@@ -19,6 +19,8 @@ use App\Services\SatuSehat\PatientService;
 use App\Services\SatuSehat\PractitionerService;
 use App\Services\SatuSehat\SatuSehatClient;
 use App\Services\SatuSehat\TerminologyService;
+use App\Services\InventoryService;
+use App\Services\PricingService;
 use Illuminate\Support\ServiceProvider;
 
 class IntegrationServiceProvider extends ServiceProvider
@@ -93,6 +95,10 @@ class IntegrationServiceProvider extends ServiceProvider
         $this->app->singleton(InformedConsentService::class, function ($app) {
             return new InformedConsentService($app->make(\App\Services\TteService::class));
         });
+
+        // Pharmacy Services
+        $this->app->singleton(InventoryService::class);
+        $this->app->singleton(PricingService::class);
     }
 
     public function boot(): void

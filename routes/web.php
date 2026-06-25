@@ -85,6 +85,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('medical-records/workspace/{queue}', [MedicalRecordController::class, 'workspace'])
         ->name('medical-records.workspace')
         ->middleware('role:admin|doctor');
+    Route::get('medical-records/workspace/{queue}/prescriptions', [MedicalRecordController::class, 'workspacePrescriptions'])
+        ->name('workspace.prescriptions')
+        ->middleware('role:admin|doctor');
     Route::post('medical-records/{medicalRecord}/sign', [MedicalRecordController::class, 'sign'])
         ->name('medical-records.sign')
         ->middleware('role:admin|doctor');
@@ -140,12 +143,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('role:admin|pharmacist');
 
     // Prescriptions — admin, doctor, pharmacist
-    Route::resource('prescriptions', PrescriptionController::class)
-        ->only(['index', 'create', 'store', 'show'])
+    Route::prefix('prescriptions')->name('prescriptions.')->middleware('role:admin|doctor|pharmacist')->group(function () {
+        Route::get('/', [PrescriptionController::class, 'index'])->name('index');
+        Route::get('/pending', [PrescriptionController::class, 'pending'])->name('pending');
+        Route::get('/create', [PrescriptionController::class, 'create'])->name('create');
+        Route::post('/', [PrescriptionController::class, 'store'])->name('store');
+        Route::get('/{prescription}', [PrescriptionController::class, 'show'])->name('show');
+        Route::get('/{prescription}/edit', [PrescriptionController::class, 'edit'])->name('edit');
+        Route::put('/{prescription}', [PrescriptionController::class, 'update'])->name('update');
+        Route::post('/{prescription}/dispense', [PrescriptionController::class, 'dispense'])->name('dispense');
+        Route::post('/{prescription}/cancel', [PrescriptionController::class, 'cancel'])->name('cancel');
+        Route::get('/print/{prescription}', [PrescriptionController::class, 'print'])->name('print');
+    });
+    Route::get('prescriptions/last/{patient}', [PrescriptionController::class, 'lastByPatient'])
+        ->name('prescriptions.last')
         ->middleware('role:admin|doctor|pharmacist');
-    Route::get('prescriptions/{prescription}/print', [PrescriptionController::class, 'print'])
-        ->name('prescriptions.print')
-        ->middleware('role:admin|pharmacist');
 
     // Inventory — admin, pharmacist
     Route::prefix('inventories')->name('inventories.')->middleware('role:admin|pharmacist')->group(function () {
@@ -290,6 +302,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('search/icd10', [\App\Http\Controllers\Web\SatuSehat\FHIRController::class, 'searchIcd10'])->name('search.icd10');
         Route::get('search/loinc', [\App\Http\Controllers\Web\SatuSehat\FHIRController::class, 'searchLoinc'])->name('search.loinc');
         Route::get('status', [\App\Http\Controllers\Web\SatuSehat\FHIRController::class, 'status'])->name('status');
+    });
+
+    // ─── Settings (Admin only) ───
+    Route::prefix('settings')->name('settings.')->middleware('role:admin')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Web\SettingsController::class, 'index'])->name('index');
+        Route::post('/', [\App\Http\Controllers\Web\SettingsController::class, 'update'])->name('update');
     });
 });
 

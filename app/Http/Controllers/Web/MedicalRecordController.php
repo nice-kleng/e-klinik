@@ -7,8 +7,10 @@ use App\Models\Doctor;
 use App\Models\Icd9CmDiagnosis;
 use App\Models\Icd10Diagnosis;
 use App\Models\MedicalRecord;
+use App\Models\Medicine;
 use App\Models\Patient;
 use App\Models\Polyclinic;
+use App\Models\Prescription;
 use App\Models\Queue;
 use App\Models\Registration;
 use App\Services\MedicalRecordService;
@@ -231,7 +233,16 @@ class MedicalRecordController extends Controller
 
         $prescriptions = $queue->medicalRecord?->prescriptions()->with('items.medicine')->latest()->get() ?? collect();
 
-        return view('medical-records.workspace', compact('queue', 'previousRecords', 'prescriptions'));
+        $medicines = Medicine::where('is_active', true)->orderBy('name')->get();
+
+        return view('medical-records.workspace', compact('queue', 'previousRecords', 'prescriptions', 'medicines'));
+    }
+
+    public function workspacePrescriptions(Queue $queue): \Illuminate\Contracts\View\View
+    {
+        $prescriptions = $queue->medicalRecord?->prescriptions()->with('items.medicine')->latest()->get() ?? collect();
+
+        return view('medical-records._resep-tab', compact('queue', 'prescriptions'));
     }
 
     public function edit(MedicalRecord $medicalRecord): View

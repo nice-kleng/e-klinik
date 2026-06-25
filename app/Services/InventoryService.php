@@ -175,6 +175,60 @@ class InventoryService
             ->get();
     }
 
+    public function deductFifo(Medicine $medicine, int $quantity, int $referenceId = null): bool
+    {
+        $remaining = $quantity;
+        $batches = Inventory::where('medicine_id', $medicine->id)
+            ->where('quantity', '>', 0)
+            ->where(function ($q) {
+                $q->whereNull('expired_date')
+                    ->orWhere('expired_date', '>=', now()->toDateString());
+            })
+            ->orderBy('expired_date', 'asc')
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        if ($batches->isEmpty()) {
+            throw new \RuntimeException("No available stock for {$medicine->name}");
+        }
+
+        $totalStock = $batches->sum('quantity');
+
+        if ($totalStock < $quantity) {
+            throw new \RuntimeException(
+                "Insufficient stock for {$medicine->name}. Available: {$totalStock}, requested: {$quantity}"
+            );
+        }
+
+        return DB::transaction(function () use ($batches, $remaining, $referenceId, $medicine) {
+            $toDeduct = $remaining;
+
+            foreach ($batches as $batch) {
+                if ($toDeduct <= 0) {
+                    break;
+                }
+
+                $deductFromBatch = min($batch->quantity, $toDeduct);
+                $batch->decrement('quantity', $deductFromBatch);
+
+                $this->createTransaction('sale', [
+                    'inventory_id' => $batch->id,
+                    'medicine_id' => $medicine->id,
+                    'quantity' => -$deductFromBatch,
+                    'unit_price' => $batch->selling_price,
+                    'total_price' => $batch->selling_price * $deductFromBatch,
+                    'reference_type' => 'prescription',
+                    'reference_id' => $referenceId,
+                    'notes' => "Deduct FIFO: {$deductFromBatch} units from batch {$batch->batch_number}",
+                ]);
+
+                $toDeduct -= $deductFromBatch;
+            }
+
+            return true;
+        });
+    }
+
     public function createTransaction(string $type, array $data): InventoryTransaction
     {
         return InventoryTransaction::create([

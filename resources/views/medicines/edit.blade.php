@@ -63,6 +63,12 @@
                         @error('unit') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-4">
+                        <label class="form-label">Dosis per Satuan</label>
+                        <input type="number" step="0.01" min="0" name="dosage_per_unit" class="form-control @error('dosage_per_unit') is-invalid @enderror" value="{{ old('dosage_per_unit', $medicine->dosage_per_unit) }}" placeholder="Contoh: 500 (untuk 500mg/tablet)">
+                        @error('dosage_per_unit') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        <small class="text-muted">Gunakan untuk auto-kalkulasi racikan</small>
+                    </div>
+                    <div class="col-md-4">
                         <label class="form-label">Kandungan</label>
                         <input type="text" name="content" class="form-control @error('content') is-invalid @enderror" value="{{ old('content', $medicine->content) }}" placeholder="Contoh: 500mg">
                         @error('content') <div class="invalid-feedback">{{ $message }}</div> @enderror

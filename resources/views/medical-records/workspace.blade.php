@@ -101,9 +101,9 @@
                     </a>
                 @endif
                 @if($mr)
-                    <a href="{{ route('prescriptions.create', ['medical_record_id' => $mr->id]) }}" class="btn btn-primary btn-sm">
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#prescriptionModal">
                         <i class="fas fa-prescription me-1"></i>Resep
-                    </a>
+                    </button>
                 @endif
                 @if($reg)
                     <div class="dropdown d-inline">
@@ -403,9 +403,9 @@
                     <i class="fas fa-prescription fa-3x mb-3 d-block"></i>
                     <p>Belum ada resep untuk kunjungan ini.</p>
                     @if($mr)
-                    <a href="{{ route('prescriptions.create', ['medical_record_id' => $mr->id]) }}" class="btn btn-primary">
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#prescriptionModal">
                         <i class="fas fa-plus-circle me-1"></i>Buat Resep
-                    </a>
+                    </button>
                     @endif
                 </div>
             @endif
@@ -707,4 +707,54 @@
 
     </div>
 </div>
+
+{{-- Toast container --}}
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999" id="toastContainer"></div>
+
+<template id="toastTemplate">
+    <div class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</template>
+
+{{-- Modal Resep --}}
+@if($mr)
+@include('prescriptions._modal', [
+    'mr' => $mr,
+    'patient' => $patient,
+    'reg' => $reg,
+    'medicines' => $medicines,
+])
+@endif
+
+@push('scripts')
+<script>
+function showToast(type, message) {
+    const tpl = document.getElementById('toastTemplate');
+    const clone = tpl.content.cloneNode(true);
+    const toast = clone.querySelector('.toast');
+    const colors = { success: 'bg-success', error: 'bg-danger', danger: 'bg-danger', warning: 'bg-warning', info: 'bg-info' };
+    toast.classList.add(colors[type] || 'bg-success');
+    toast.querySelector('.toast-body').textContent = message;
+    document.getElementById('toastContainer').appendChild(clone);
+    new bootstrap.Toast(toast, { delay: 5000 }).show();
+    toast.addEventListener('hidden.bs.toast', () => toast.remove());
+}
+
+function loadResepTab() {
+    fetch('{{ route('workspace.prescriptions', $queue) }}')
+        .then(r => r.text())
+        .then(html => {
+            const resepTab = document.getElementById('resep');
+            if (resepTab) {
+                resepTab.innerHTML = html;
+            }
+        })
+        .catch(e => console.error('Gagal reload resep tab:', e));
+}
+</script>
+@endpush
 @endsection

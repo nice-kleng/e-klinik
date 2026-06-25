@@ -187,6 +187,28 @@
     <li class="nav-item">
         <span class="nav-link text-secondary text-uppercase small fw-bold px-3">Farmasi</span>
     </li>
+    <li class="nav-item {{ request()->routeIs('prescriptions.pending*') ? 'active' : '' }}">
+        <a href="{{ route('prescriptions.pending') }}" class="nav-link">
+            <span class="sidebar-icon">
+                <i class="fas fa-clock fa-fw me-2"></i>
+            </span>
+            <span class="sidebar-text d-flex justify-content-between w-100">
+                Resep Masuk
+                @php $pendingCount = \App\Models\Prescription::where('status', 'active')->count(); @endphp
+                @if($pendingCount > 0)
+                    <span class="badge bg-danger rounded-pill ms-1">{{ $pendingCount }}</span>
+                @endif
+            </span>
+        </a>
+    </li>
+    <li class="nav-item {{ request()->routeIs('prescriptions.*') && !request()->routeIs('prescriptions.pending*') ? 'active' : '' }}">
+        <a href="{{ route('prescriptions.index') }}" class="nav-link">
+            <span class="sidebar-icon">
+                <i class="fas fa-prescription fa-fw me-2"></i>
+            </span>
+            <span class="sidebar-text">Resep</span>
+        </a>
+    </li>
     <li class="nav-item {{ request()->routeIs('medicines.*') ? 'active' : '' }}">
         <a href="{{ route('medicines.index') }}" class="nav-link">
             <span class="sidebar-icon">
@@ -209,6 +231,21 @@
                 <i class="fas fa-exclamation-triangle fa-fw me-2"></i>
             </span>
             <span class="sidebar-text">Laporan</span>
+        </a>
+    </li>
+    @endrole
+
+    @role('admin')
+    <li role="separator" class="dropdown-divider mt-4 mb-3 border-gray-700"></li>
+    <li class="nav-item">
+        <span class="nav-link text-secondary text-uppercase small fw-bold px-3">Pengaturan</span>
+    </li>
+    <li class="nav-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
+        <a href="{{ route('settings.index') }}" class="nav-link">
+            <span class="sidebar-icon">
+                <i class="fas fa-cog fa-fw me-2"></i>
+            </span>
+            <span class="sidebar-text">Pengaturan Farmasi</span>
         </a>
     </li>
     @endrole

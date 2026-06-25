@@ -27,6 +27,7 @@ class Medicine extends Model
         'is_active',
         'kfa_code',
         'kfa_name',
+        'dosage_per_unit',
     ];
 
     protected function casts(): array

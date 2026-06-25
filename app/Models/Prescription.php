@@ -19,12 +19,16 @@ class Prescription extends Model
         'status',
         'notes',
         'created_by',
+        'dispensed_by',
+        'dispensed_at',
+        'cancellation_reason',
     ];
 
     protected function casts(): array
     {
         return [
             'prescription_date' => 'date',
+            'dispensed_at' => 'datetime',
         ];
     }
 
@@ -46,6 +50,11 @@ class Prescription extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function dispenser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'dispensed_by');
     }
 
     public function items(): HasMany
