@@ -225,12 +225,49 @@
             <span class="sidebar-text">Stok Obat</span>
         </a>
     </li>
-    <li class="nav-item {{ request()->routeIs('inventories.expired*') ? 'active' : '' }}">
-        <a href="{{ route('inventories.expired') }}" class="nav-link">
+    <li class="nav-item {{ request()->routeIs('inventories.opname*') ? 'active' : '' }}">
+        <a href="{{ route('inventories.opname') }}" class="nav-link">
+            <span class="sidebar-icon">
+                <i class="fas fa-clipboard-check fa-fw me-2"></i>
+            </span>
+            <span class="sidebar-text">Stok Opname</span>
+        </a>
+    </li>
+    <li class="nav-item {{ request()->routeIs('inventories.low-stock*') ? 'active' : '' }}">
+        <a href="{{ route('inventories.low-stock') }}" class="nav-link">
             <span class="sidebar-icon">
                 <i class="fas fa-exclamation-triangle fa-fw me-2"></i>
             </span>
-            <span class="sidebar-text">Laporan</span>
+            <span class="sidebar-text">Stok Menipis</span>
+        </a>
+    </li>
+    @endrole
+
+    @role('admin|cashier')
+    <li role="separator" class="dropdown-divider mt-4 mb-3 border-gray-700"></li>
+    <li class="nav-item">
+        <span class="nav-link text-secondary text-uppercase small fw-bold px-3">Kasir</span>
+    </li>
+    <li class="nav-item {{ request()->routeIs('kasir.*') ? 'active' : '' }}">
+        <a href="{{ route('kasir.index') }}" class="nav-link">
+            <span class="sidebar-icon">
+                <i class="fas fa-cash-register fa-fw me-2"></i>
+            </span>
+            <span class="sidebar-text d-flex justify-content-between w-100">
+                Invoice
+                @php $pendingInvoiceCount = \App\Models\Invoice::where('status', 'pending')->count(); @endphp
+                @if($pendingInvoiceCount > 0)
+                    <span class="badge bg-warning rounded-pill ms-1">{{ $pendingInvoiceCount }}</span>
+                @endif
+            </span>
+        </a>
+    </li>
+    <li class="nav-item {{ request()->routeIs('kasir.create*') ? 'active' : '' }}">
+        <a href="{{ route('kasir.create') }}" class="nav-link">
+            <span class="sidebar-icon">
+                <i class="fas fa-plus-circle fa-fw me-2"></i>
+            </span>
+            <span class="sidebar-text">Buat Invoice</span>
         </a>
     </li>
     @endrole

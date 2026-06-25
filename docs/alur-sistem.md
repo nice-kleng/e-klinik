@@ -25,20 +25,34 @@ Status kunjungan pasien dilacak di kolom `registrations.service_status`.
                  ┌─────────────────────────────────────┐
                  │         in_consultation              │
                  │  (Dokter periksa, isi RME)           │
-                 └──────┬──────────────┬───────────────┘
-                        │              │
-          EducationService::create()   │ (langsung resume)
-                        ▼              ▼
-            ┌──────────────────┐  ┌──────────────────┐
-            │    education     │  │    completed      │
-            │  (Edukasi pasien)│  │  (Selesai)        │
-            └────────┬─────────┘  └──────────────────┘
-                     │ VisitSummaryService::create()
-                     ▼
-            ┌──────────────────┐
-            │    completed      │
-            │  (Selesai)        │
-            └──────────────────┘
+                 └──────┬──────────────────────────────┘
+                        │ Complete consultation ->
+                        │ UPDATE service_status = pharmacy
+                        ▼
+                 ┌─────────────────────────────────────┐
+                 │           pharmacy                   │
+                 │  (Farmasi proses resep, dispensing)  │
+                 └────────────┬────────────────────────┘
+                              │ Dispense selesai ->
+                              │ UPDATE service_status = cashier
+                              ▼
+                 ┌─────────────────────────────────────┐
+                 │            cashier                   │
+                 │  (Kasir buat invoice + bayar)        │
+                 └────────────┬────────────────────────┘
+                              │ Kasir bayar ->
+                              │ UPDATE service_status = education
+                              ▼
+                 ┌─────────────────────────────────────┐
+                 │           education                  │
+                 │  (Edukasi pasien)                    │
+                 └────────────┬────────────────────────┘
+                              │ VisitSummaryService::create()
+                              ▼
+                 ┌─────────────────────────────────────┐
+                 │           completed                  │
+                 │  (Selesai)                           │
+                 └─────────────────────────────────────┘
 
                     Setiap status bisa ke cancelled:
                     QueueService::cancel() — segala status → cancelled
@@ -49,7 +63,9 @@ Status kunjungan pasien dilacak di kolom `registrations.service_status`.
 | `registered` | `QueueService::registerQueue()` | Resepsionis |
 | `triage` | `TriageService::create()` | Perawat |
 | `in_consultation` | `QueueService::callAndProgress()` / `inProgress()` | Staff Poli (dokter/perawat) |
-| `education` | `EducationService::create()` | Dokter/Perawat |
+| `pharmacy` | `MedicalRecordService::completeConsultation()` | Dokter/Perawat |
+| `cashier` | `PrescriptionController::dispense()` / farmasi selesai | Farmasi |
+| `education` | `EducationService::create()` | Dokter/Perawat / Kasir (auto setelah bayar) |
 | `completed` | `QueueService::complete()` atau `VisitSummaryService::create()` | Staff Poli / Dokter |
 | `cancelled` | `QueueService::cancel()` | Staff Poli / Resepsionis |
 
@@ -182,68 +198,72 @@ PASIEN DATANG
 │            lihat polinya sendiri)                      │
 └──────────────────────┬─────────────────────────────────┘
                        │
-         ┌─────────────┼─────────────┬──────────────────┐
-         ▼             ▼             ▼                  ▼
+          ┌─────────────┬─────────────┬───────────────┬────────────────┐
+          ▼             ▼             ▼               ▼
 ┌────────────────┐ ┌──────────┐ ┌──────────┐ ┌────────────────┐
-│ 5. RESEP       │ │ 6. LAB   │ │ 7. IC    │ │ 8. EDUKASI     │
+│ 5a. FARMASI    │ │ 5b. KASIR│ │ 6. LAB   │ │ 7. IC         │
 │                │ │          │ │          │ │                │
-│ Controller:    │ │Control:  │ │Control:  │ │ Control:       │
-│ Prescription-  │ │LabRequest│ │Informed- │ │ Patient-       │
-│ Controller     │ │Controller│ │Consent-  │ │ Education-     │
-│                │ │          │ │Controller│ │ Controller     │
-│ Service:       │ │Service:  │ │Service:  │ │ Service:       │
-│ MedicalRecord- │ │(direct   │ │Informed- │ │ EducationService│
-│ Service::      │ │DB)       │ │Consent-  │ │                │
-│ createPrescrip-│ │          │ │Service   │ │                │
-│ tion()         │ │          │ │          │ │                │
-│                │ │          │ │          │ │                │
-│ Route:         │ │Route:    │ │Route:    │ │ Route:         │
-│ /prescriptions │ │/lab-     │ │/informed-│ │ /medical-      │
-│ (role:         │ │requests  │ │consents  │ │ records/{mr}/  │
-│ admin|doctor|  │ │(role:    │ │(role:    │ │ education      │
-│ pharmacist)    │ │admin|    │ │admin|    │ │ (role:         │
-│                │ │doctor|   │ │doctor)   │ │ admin|doctor)  │
-│                │ │laborant) │ │          │ │                │
-│ Observer:      │ │          │ │Procedure │ │                │
-│ Prescription-  │ │          │ │linked:   │ │                │
-│ Observer →     │ │          │ │medical_  │ │                │
-│ Sync Satu Sehat│ │          │ │record_   │ │                │
-│ + Audit Log    │ │          │ │procedures│ │                │
-│                │ │          │ │.informed_│ │                │
-│                │ │          │ │consent_id│ │                │
-│                │ │          │ │          │ │                │
-│ Format nomor:  │ │Format:   │ │Flow:     │ │ CREATE: isi    │
-│ RX-YYYYMMDD-   │ │LAB-      │ │ draft →  │ │ 5 field        │
-│ XXXX           │ │YYYYMMDD- │ │ pasien   │ │ edukasi        │
-│                │ │XXX       │ │ setuju → │ │                │
-│                │ │          │ │ dokter   │ │ UPDATE:        │
-│                │ │          │ │ tanda →  │ │ /edit          │
-│                │ │          │ │ PDF QR   │ │                │
+│(Dispensing &   │ │(Tagihan  │ │Controller:│ │(Informed       │
+│ manajemen stok) │ │ & bayar) │ │ LabRequest│ │ Consent)       │
+│                │ │          │ │Controller │ │                │
+│ Controller:    │ │Controller:│ │Service:  │ │ Controller:    │
+│ Prescription-  │ │ Kasir-   │ │(direct DB)│ │ InformedConsent│
+│ Controller     │ │Controller │ │          │ │ Controller     │
+│ Inventory-     │ │          │ │Route:    │ │ Service:       │
+│ Controller     │ │Route:    │ │/lab-     │ │ InformedConsent│
+│                │ │/kasir    │ │requests  │ │ Service        │
+│ Route:         │ │(role:    │ │(role:    │ │                │
+│ /prescriptions │ │admin|    │ │admin|    │ │ Route:         │
+│ (role: admin|  │ │cashier)  │ │doctor|   │ │ /informed-     │
+│ doctor|pharm.) │ │          │ │laborant) │ │ consents (role:│
+│ /inventories   │ │Format:   │ │          │ │ admin|doctor)  │
+│ (role: admin|  │ │INV-      │ │Format:   │ │                │
+│ pharmacist)    │ │YYYYMMDD- │ │LAB-      │ │ Flow: draft →  │
+│                │ │XXXX      │ │YYYYMMDD- │ │ pasien setuju →│
+│ Metode stok:   │ │          │ │XXX       │ │ dokter tanda → │
+│ FEFO batch,   │ │Bayar →   │ │          │ │ PDF QR Code    │
+│ FIFO pricing, │ │auto-update│ │          │ │                │
+│ tuslah 3rb,   │ │service_  │ │          │ │                │
+│ embalase 1rb  │ │status ke │ │          │ │                │
+│                │ │education  │ │          │ │                │
+│ Auto-calc via  │ │Cetak     │ │          │ │                │
+│ PricingService │ │struk     │ │          │ │                │
+│                │ │(80mm)    │ │          │ │                │
 └───────┬────────┘ └────┬─────┘ └────┬─────┘ └────────┬───────┘
         │               │            │                │
-        └───────┬───────┘            └───────┬────────┘
-                │                            │
-                ▼                            ▼
+        └───────┬───────┴────────────┴────────┬───────┘
+                │                             │
+                ▼                             ▼
        ┌────────────────────────────────────────┐
-       │ 9. RESUME KUNJUNGAN                    │
-       │    Route: /registration/{reg}/summary   │
-       │    Controller: VisitSummaryController    │
-       │    Service: VisitSummaryService::create() │
-       │    Database: INSERT visit_summaries      │
-       │    → UPDATE service_status = completed   │
-       │    → Trigger: Surat (DomPDF)             │
-       ├─────────────────────────────────────────┤
-       │    Alur:                                │
-       │      → Diagnosis akhir                  │
-       │      → Status pulang (sembuh/dirujuk/    │
-       │        pulang_paksa/meninggal/lainnya)   │
-       │      → Rencana kontrol                  │
-       │      → Rujukan (jika ada)               │
-       │      → Surat sakit (opsional)           │
-       │      → System: INSERT visit_summaries   │
-       │      → System: UPDATE status = completed │
-       │      → Cetak surat (opsional)            │
+       │ 8. EDUKASI                              │
+       │    Controller: PatientEducationController │
+       │    Service: EducationService             │
+       │    Route: /medical-records/{mr}/education│
+       │    (role: admin|doctor)                  │
+       │    CREATE/UDPATE: 5 field edukasi        │
        └────────────────────┬────────────────────┘
+                            │
+                            ▼
+       ┌────────────────────────────────────────────┐
+       │ 9. RESUME KUNJUNGAN                        │
+       │    Route: /registration/{reg}/summary       │
+       │    Controller: VisitSummaryController        │
+       │    Service: VisitSummaryService::create()   │
+       │    Database: INSERT visit_summaries          │
+       │    → UPDATE service_status = completed      │
+       │    → Trigger: Surat (DomPDF)                │
+       ├────────────────────────────────────────────┤
+       │    Alur:                                   │
+       │      → Diagnosis akhir                     │
+       │      → Status pulang (sembuh/dirujuk/       │
+       │        pulang_paksa/meninggal/lainnya)      │
+       │      → Rencana kontrol                     │
+       │      → Rujukan (jika ada)                  │
+       │      → Surat sakit (opsional)              │
+       │      → System: INSERT visit_summaries      │
+       │      → System: UPDATE status = completed    │
+       │      → Cetak surat (opsional)              │
+       └────────────────────┬───────────────────────┘
                             │
                             ▼
                ┌──────────────────────┐
@@ -458,10 +478,14 @@ nurse
 └── /medical-records (show only — via workspace)
 
 pharmacist
-├── /medicines, /prescriptions, /inventories
+├── /medicines (CRUD + minimum_stock)
+├── /prescriptions (pending, index, show, dispense, etiket)
+├── /inventories (CRUD batch, opname, low-stock, expiring, expired)
+├── /settings (pengaturan farmasi)
 └── /bpjs/vclaim
 
 cashier
+├── /kasir (index, create, show, bayar, cetak)
 ├── /bpjs/vclaim
 └── /bpjs/antrol
 

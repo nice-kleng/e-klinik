@@ -4,7 +4,16 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="mb-0">Detail Stok Obat</h4>
-        <a href="{{ route('inventories.index') }}" class="btn btn-outline-secondary">Kembali</a>
+        <div class="d-flex gap-2">
+            <a href="{{ route('inventories.edit', $inventory) }}" class="btn btn-warning btn-sm">
+                <i class="fas fa-edit me-1"></i>Edit
+            </a>
+            <button type="button" class="btn btn-danger btn-sm" onclick="if(confirm('Hapus batch stok ini?')) event.target.closest('div').querySelector('form')?.submit()">
+                <i class="fas fa-trash me-1"></i>Hapus
+            </button>
+            <form method="POST" action="{{ route('inventories.destroy', $inventory) }}" style="display:none">@csrf @method('DELETE')</form>
+            <a href="{{ route('inventories.index') }}" class="btn btn-outline-secondary">Kembali</a>
+        </div>
     </div>
 
     @include('components.alert')

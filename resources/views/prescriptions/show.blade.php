@@ -17,6 +17,7 @@
                     <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#cancelModal"><i class="fas fa-times me-1"></i>Batalkan</button>
                 @endif
             @endif
+            <a href="{{ route('prescriptions.etiket', $prescription) }}" class="btn btn-info" target="_blank"><i class="fas fa-tag me-1"></i>Etiket</a>
             <a href="{{ route('prescriptions.print', $prescription) }}" class="btn btn-secondary" target="_blank"><i class="fas fa-print me-1"></i>Cetak</a>
             <a href="{{ route('prescriptions.index') }}" class="btn btn-outline-secondary">Kembali</a>
         </div>

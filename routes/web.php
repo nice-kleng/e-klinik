@@ -24,6 +24,7 @@ use App\Http\Controllers\Web\LetterController;
 use App\Http\Controllers\Web\AuditTrailController;
 use App\Http\Controllers\Web\AttachmentController;
 use App\Http\Controllers\Web\InformedConsentController;
+use App\Http\Controllers\Web\KasirController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -154,6 +155,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/{prescription}/dispense', [PrescriptionController::class, 'dispense'])->name('dispense');
         Route::post('/{prescription}/cancel', [PrescriptionController::class, 'cancel'])->name('cancel');
         Route::get('/print/{prescription}', [PrescriptionController::class, 'print'])->name('print');
+        Route::get('/etiket/{prescription}', [PrescriptionController::class, 'etiket'])->name('etiket');
     });
     Route::get('prescriptions/last/{patient}', [PrescriptionController::class, 'lastByPatient'])
         ->name('prescriptions.last')
@@ -164,10 +166,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/', [InventoryController::class, 'index'])->name('index');
         Route::get('/create', [InventoryController::class, 'create'])->name('create');
         Route::post('/', [InventoryController::class, 'store'])->name('store');
-        Route::get('/{inventory}', [InventoryController::class, 'show'])->name('show');
+        Route::match(['get', 'post'], '/opname', [InventoryController::class, 'opname'])->name('opname');
         Route::get('/reports/low-stock', [InventoryController::class, 'lowStock'])->name('low-stock');
         Route::get('/reports/expiring', [InventoryController::class, 'expiring'])->name('expiring');
         Route::get('/reports/expired', [InventoryController::class, 'expired'])->name('expired');
+        Route::get('/{inventory}/edit', [InventoryController::class, 'edit'])->name('edit');
+        Route::put('/{inventory}', [InventoryController::class, 'update'])->name('update');
+        Route::delete('/{inventory}', [InventoryController::class, 'destroy'])->name('destroy');
+        Route::get('/{inventory}', [InventoryController::class, 'show'])->name('show');
+    });
+
+    // Kasir — admin, cashier
+    Route::prefix('kasir')->name('kasir.')->group(function () {
+        Route::get('/', [KasirController::class, 'index'])->name('index');
+        Route::get('/create', [KasirController::class, 'create'])->name('create');
+        Route::post('/', [KasirController::class, 'store'])->name('store');
+        Route::get('/{invoice}', [KasirController::class, 'show'])->name('show');
+        Route::post('/{invoice}/pay', [KasirController::class, 'pay'])->name('pay');
+        Route::delete('/{invoice}', [KasirController::class, 'destroy'])->name('destroy');
+        Route::get('/{invoice}/print', [KasirController::class, 'print'])->name('print');
     });
 
     // BPJS SEP — admin only

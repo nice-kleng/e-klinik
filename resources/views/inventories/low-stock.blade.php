@@ -15,7 +15,7 @@
 
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h6 class="mb-0">Obat dengan Stok di Bawah {{ $threshold }}</h6>
+            <h6 class="mb-0">Obat dengan Stok di Bawah Minimum</h6>
             <span class="badge bg-warning">{{ $medicines->count() }} obat</span>
         </div>
         <div class="card-body p-0">

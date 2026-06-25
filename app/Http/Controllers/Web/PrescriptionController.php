@@ -415,6 +415,15 @@ class PrescriptionController extends Controller
         return view('prescriptions.print', compact('prescription'));
     }
 
+    public function etiket(Prescription $prescription): View
+    {
+        $prescription->load(['patient', 'items.medicine', 'items.prescription']);
+        $items = $prescription->items;
+        $patient = $prescription->patient;
+
+        return view('prescriptions.etiket', compact('items', 'patient'));
+    }
+
     protected function generatePrescriptionNumber(): string
     {
         $date = now()->format('Ymd');

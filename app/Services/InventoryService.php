@@ -52,7 +52,7 @@ class InventoryService
                 'created_by' => $data['created_by'] ?? auth()->id(),
             ]);
 
-            $this->createTransaction('purchase', [
+            $this->createTransaction('in', [
                 'inventory_id' => $inventory->id,
                 'medicine_id' => $medicine->id,
                 'quantity' => $data['quantity'],
@@ -88,7 +88,7 @@ class InventoryService
 
             $inventory->decrement('quantity', $quantity);
 
-            $this->createTransaction('sale', [
+            $this->createTransaction('out', [
                 'inventory_id' => $inventory->id,
                 'medicine_id' => $medicine->id,
                 'quantity' => -$quantity,
@@ -115,7 +115,7 @@ class InventoryService
 
             $inventory->update(['quantity' => $newQuantity]);
 
-            $this->createTransaction('adjustment', [
+            $this->createTransaction('opname', [
                 'inventory_id' => $inventory->id,
                 'medicine_id' => $inventory->medicine_id,
                 'quantity' => $difference,
@@ -211,7 +211,7 @@ class InventoryService
                 $deductFromBatch = min($batch->quantity, $toDeduct);
                 $batch->decrement('quantity', $deductFromBatch);
 
-                $this->createTransaction('sale', [
+                $this->createTransaction('out', [
                     'inventory_id' => $batch->id,
                     'medicine_id' => $medicine->id,
                     'quantity' => -$deductFromBatch,
@@ -243,6 +243,70 @@ class InventoryService
             'notes' => $data['notes'] ?? null,
             'created_by' => $data['created_by'] ?? auth()->id(),
         ]);
+    }
+
+    public function opnameStock(Medicine $medicine, int $actualQty, int $userId): bool
+    {
+        $currentStock = $this->getStock($medicine);
+        $diff = $actualQty - $currentStock;
+
+        if ($diff === 0) return false;
+
+        return DB::transaction(function () use ($medicine, $diff, $actualQty, $userId) {
+            if ($diff > 0) {
+                $inv = Inventory::create([
+                    'medicine_id' => $medicine->id,
+                    'batch_number' => 'OPNAME-' . now()->format('Ymd') . '-' . strtoupper(substr(uniqid(), -4)),
+                    'quantity' => $diff,
+                    'unit_price' => 0,
+                    'selling_price' => 0,
+                    'notes' => 'Stock opname surplus: +' . $diff,
+                    'created_by' => $userId,
+                ]);
+                $this->createTransaction('in', [
+                    'inventory_id' => $inv->id,
+                    'medicine_id' => $medicine->id,
+                    'quantity' => $diff,
+                    'unit_price' => 0,
+                    'total_price' => 0,
+                    'reference_type' => 'stock_opname',
+                    'reference_id' => $inv->id,
+                    'notes' => 'Stock opname: actual ' . $actualQty . ' vs system ' . ($actualQty - $diff),
+                    'created_by' => $userId,
+                ]);
+            } else {
+                $toDeduct = abs($diff);
+                $batches = Inventory::where('medicine_id', $medicine->id)
+                    ->where('quantity', '>', 0)
+                    ->where(function ($q) {
+                        $q->whereNull('expired_date')
+                            ->orWhere('expired_date', '>=', now()->toDateString());
+                    })
+                    ->orderBy('expired_date', 'asc')
+                    ->orderBy('created_at', 'asc')
+                    ->get();
+
+                foreach ($batches as $batch) {
+                    if ($toDeduct <= 0) break;
+                    $deductFromBatch = min($batch->quantity, $toDeduct);
+                    $batch->decrement('quantity', $deductFromBatch);
+                    $this->createTransaction('out', [
+                        'inventory_id' => $batch->id,
+                        'medicine_id' => $medicine->id,
+                        'quantity' => -$deductFromBatch,
+                        'unit_price' => $batch->unit_price,
+                        'total_price' => $batch->unit_price * $deductFromBatch,
+                        'reference_type' => 'stock_opname',
+                        'reference_id' => $batch->id,
+                        'notes' => 'Stock opname deficit: -' . $deductFromBatch . ' from batch ' . $batch->batch_number,
+                        'created_by' => $userId,
+                    ]);
+                    $toDeduct -= $deductFromBatch;
+                }
+            }
+
+            return true;
+        });
     }
 
     public function getMedicineReport(string $startDate, string $endDate): array

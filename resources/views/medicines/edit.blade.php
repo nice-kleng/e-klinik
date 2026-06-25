@@ -68,7 +68,13 @@
                         @error('dosage_per_unit') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         <small class="text-muted">Gunakan untuk auto-kalkulasi racikan</small>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-2">
+                        <label class="form-label">Stok Minimal</label>
+                        <input type="number" min="0" name="minimum_stock" class="form-control @error('minimum_stock') is-invalid @enderror" value="{{ old('minimum_stock', $medicine->minimum_stock) }}" placeholder="10">
+                        @error('minimum_stock') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        <small class="text-muted">Notifikasi jika stok di bawah ini</small>
+                    </div>
+                    <div class="col-md-2">
                         <label class="form-label">Kandungan</label>
                         <input type="text" name="content" class="form-control @error('content') is-invalid @enderror" value="{{ old('content', $medicine->content) }}" placeholder="Contoh: 500mg">
                         @error('content') <div class="invalid-feedback">{{ $message }}</div> @enderror

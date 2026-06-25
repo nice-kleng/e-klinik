@@ -28,6 +28,7 @@ class Medicine extends Model
         'kfa_code',
         'kfa_name',
         'dosage_per_unit',
+        'minimum_stock',
     ];
 
     protected function casts(): array
@@ -36,6 +37,7 @@ class Medicine extends Model
             'is_generic' => 'boolean',
             'requires_prescription' => 'boolean',
             'is_active' => 'boolean',
+            'minimum_stock' => 'integer',
         ];
     }
 
