@@ -395,7 +395,7 @@ class MedicalRecordController extends Controller
     public function updateServiceStatus(Request $request, Queue $queue): RedirectResponse
     {
         $validated = $request->validate([
-            'service_status' => 'required|in:pharmacy,completed,cancelled',
+            'service_status' => 'required|in:pharmacy,lab,education,completed,cancelled',
         ]);
 
         $registration = $queue->registration;
@@ -404,9 +404,10 @@ class MedicalRecordController extends Controller
         }
 
         $allowedTransitions = [
-            'in_consultation' => ['pharmacy', 'completed', 'cancelled'],
-            'pharmacy' => ['completed', 'cancelled'],
-            'cashier' => ['completed', 'cancelled'],
+            'in_consultation' => ['pharmacy', 'lab', 'education', 'completed', 'cancelled'],
+            'lab' => ['pharmacy', 'education', 'completed', 'cancelled'],
+            'pharmacy' => ['cashier', 'education', 'completed', 'cancelled'],
+            'cashier' => ['education', 'completed', 'cancelled'],
             'education' => ['completed', 'cancelled'],
             'completed' => [],
             'cancelled' => [],
@@ -424,6 +425,8 @@ class MedicalRecordController extends Controller
 
             $labels = [
                 'pharmacy' => 'Farmasi',
+                'lab' => 'Laboratorium',
+                'education' => 'Edukasi',
                 'completed' => 'Selesai',
                 'cancelled' => 'Dibatalkan',
             ];

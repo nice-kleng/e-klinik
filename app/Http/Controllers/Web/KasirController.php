@@ -87,7 +87,7 @@ class KasirController extends Controller
         }
 
         $registrations = Registration::with(['patient', 'polyclinic'])
-            ->whereIn('service_status', ['pharmacy', 'cashier'])
+            ->whereIn('service_status', ['in_consultation', 'pharmacy', 'cashier'])
             ->whereDate('registration_date', now())
             ->orderBy('created_at', 'desc')
             ->get();
@@ -141,6 +141,10 @@ class KasirController extends Controller
             }
 
             $invoice->update(['total_amount' => $total]);
+
+            if ($registration->service_status === 'in_consultation') {
+                $registration->update(['service_status' => 'cashier']);
+            }
 
             DB::commit();
 

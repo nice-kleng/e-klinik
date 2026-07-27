@@ -20,13 +20,29 @@
                         <td>{{ $reg->registration_number }}</td>
                         <td>{{ $reg->patient->name ?? '-' }}</td>
                         <td>{{ $reg->polyclinic->name ?? '-' }}</td>
-                        <td><span class="badge bg-info">{{ $reg->service_status }}</span></td>
+                        <td>
+                            @php
+                                $statusLabel = match($reg->service_status) {
+                                    'in_consultation' => 'Konsultasi',
+                                    'pharmacy' => 'Farmasi',
+                                    'cashier' => 'Kasir',
+                                    default => $reg->service_status,
+                                };
+                                $statusColor = match($reg->service_status) {
+                                    'in_consultation' => 'secondary',
+                                    'pharmacy' => 'warning',
+                                    'cashier' => 'danger',
+                                    default => 'info',
+                                };
+                            @endphp
+                            <span class="badge bg-{{ $statusColor }}">{{ $statusLabel }}</span>
+                        </td>
                         <td>
                             <a href="{{ route('kasir.create', ['registration_id' => $reg->id]) }}" class="btn btn-sm btn-primary">Pilih</a>
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="5" class="text-center text-muted py-4">Tidak ada pasien di status farmasi/kasir hari ini</td></tr>
+                    <tr><td colspan="5" class="text-center text-muted py-4">Tidak ada pasien yang perlu dibuatkan invoice hari ini</td></tr>
                     @endforelse
                 </tbody>
             </table>
