@@ -59,34 +59,36 @@
                 @if($mr && $mr->signed_by)
                     <span class="badge bg-success fs-6"><i class="fas fa-shield-alt me-1"></i>TTE: ✓</span>
                 @endif
-                @php
-                    $statusBadge = match($reg?->service_status) {
-                        'registered' => 'bg-secondary',
-                        'triage' => 'bg-info',
-                        'in_consultation' => 'bg-primary',
-                        'lab' => 'bg-warning',
-                        'pharmacy' => 'bg-warning',
-                        'education' => 'bg-info',
-                        'resume' => 'bg-primary',
-                        'completed' => 'bg-success',
-                        'cancelled' => 'bg-danger',
-                        default => 'bg-secondary'
-                    };
-                @endphp
-                <span class="badge {{ $statusBadge }} fs-6">
-                    @switch($reg?->service_status)
-                        @case('registered') Terdaftar @break
-                        @case('triage') Triage @break
-                        @case('in_consultation') Konsultasi @break
-                        @case('lab') Laboratorium @break
-                        @case('pharmacy') Farmasi @break
-                        @case('education') Edukasi @break
-                        @case('resume') Resume @break
-                        @case('completed') Selesai @break
-                        @case('cancelled') Dibatalkan @break
-                        @default {{ $reg?->service_status ?? '-' }}
-                    @endswitch
-                </span>
+    @php
+        $statusBadge = match($reg?->service_status) {
+            'registered' => 'bg-secondary',
+            'triage' => 'bg-info',
+            'in_consultation' => 'bg-primary',
+            'lab' => 'bg-warning',
+            'pharmacy' => 'bg-warning',
+            'cashier' => 'bg-danger',
+            'education' => 'bg-info',
+            'resume' => 'bg-primary',
+            'completed' => 'bg-success',
+            'cancelled' => 'bg-danger',
+            default => 'bg-secondary'
+        };
+    @endphp
+    <span class="badge {{ $statusBadge }} fs-6">
+        @switch($reg?->service_status)
+            @case('registered') Terdaftar @break
+            @case('triage') Triage @break
+            @case('in_consultation') Konsultasi @break
+            @case('lab') Laboratorium @break
+            @case('pharmacy') Farmasi @break
+            @case('cashier') Kasir @break
+            @case('education') Edukasi @break
+            @case('resume') Resume @break
+            @case('completed') Selesai @break
+            @case('cancelled') Dibatalkan @break
+            @default {{ $reg?->service_status ?? '-' }}
+        @endswitch
+    </span>
             </div>
 
             {{-- Tombol Aksi --}}
@@ -118,6 +120,39 @@
                         </ul>
                     </div>
                 @endif
+
+                {{-- Transisi Status Layanan --}}
+                @if($reg && $mr)
+                    @if($reg->service_status === 'in_consultation')
+                        <form method="POST" action="{{ route('medical-records.service-status', $queue) }}" class="d-inline"
+                              onsubmit="return confirm('Kirim pasien ke Farmasi?')">
+                            @csrf
+                            <input type="hidden" name="service_status" value="pharmacy">
+                            <button type="submit" class="btn btn-warning btn-sm">
+                                <i class="fas fa-pills me-1"></i>Kirim ke Farmasi
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ route('medical-records.service-status', $queue) }}" class="d-inline"
+                              onsubmit="return confirm('Tandai konsultasi selesai?')">
+                            @csrf
+                            <input type="hidden" name="service_status" value="completed">
+                            <button type="submit" class="btn btn-success btn-sm">
+                                <i class="fas fa-check-circle me-1"></i>Selesai Konsultasi
+                            </button>
+                        </form>
+                    @endif
+                    @if(in_array($reg->service_status, ['pharmacy', 'cashier', 'education']))
+                        <form method="POST" action="{{ route('medical-records.service-status', $queue) }}" class="d-inline"
+                              onsubmit="return confirm('Tandai kunjungan selesai?')">
+                            @csrf
+                            <input type="hidden" name="service_status" value="completed">
+                            <button type="submit" class="btn btn-success btn-sm">
+                                <i class="fas fa-check-circle me-1"></i>Selesai
+                            </button>
+                        </form>
+                    @endif
+                @endif
+
                 <a href="{{ route('queues.index') }}" class="btn btn-outline-secondary btn-sm">
                     <i class="fas fa-arrow-left me-1"></i>Kembali
                 </a>

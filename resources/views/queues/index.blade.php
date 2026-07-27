@@ -112,8 +112,23 @@
                                         'cancelled' => 'Dibatalkan',
                                         default => $queue->status
                                     };
+                                    $regStatusBadge = match($reg?->service_status) {
+                                        'pharmacy' => 'bg-warning',
+                                        'cashier' => 'bg-danger',
+                                        'education' => 'bg-info',
+                                        default => null
+                                    };
+                                    $regStatusLabel = match($reg?->service_status) {
+                                        'pharmacy' => 'Farmasi',
+                                        'cashier' => 'Kasir',
+                                        'education' => 'Edukasi',
+                                        default => null
+                                    };
                                 @endphp
                                 <span class="badge {{ $statusBadge }}">{{ $statusLabel }}</span>
+                                @if($regStatusLabel)
+                                    <span class="badge {{ $regStatusBadge }}">{{ $regStatusLabel }}</span>
+                                @endif
                             </td>
                             <td>
                                 @if(in_array($queue->status, ['waiting', 'called']))
@@ -125,7 +140,7 @@
                                     @endunless
                                 @endif
                                 @unless($isReceptionist)
-                                @if(in_array($queue->status, ['waiting', 'called', 'in_progress']))
+                                @if(in_array($queue->status, ['waiting', 'called', 'in_progress']) && !in_array($reg?->service_status, ['pharmacy', 'cashier']))
                                     <button class="btn btn-sm btn-success btn-complete" data-queue-id="{{ $queue->id }}" data-url="{{ route('queues.complete', $queue) }}">Selesai</button>
                                 @endif
                                 @endunless

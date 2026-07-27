@@ -237,6 +237,14 @@ class QueueService
             );
         }
 
+        $serviceStatus = $queue->registration?->service_status;
+        if (in_array($serviceStatus, ['pharmacy', 'cashier'])) {
+            throw new \RuntimeException(
+                'Pasien masih dalam alur ' . ($serviceStatus === 'pharmacy' ? 'Farmasi' : 'Kasir') .
+                '. Selesaikan alur tersebut terlebih dahulu sebelum menyelesaikan antrean.'
+            );
+        }
+
         $queue->update(['status' => self::STATUS_COMPLETED]);
 
         $queue->registration?->update(['service_status' => 'completed']);

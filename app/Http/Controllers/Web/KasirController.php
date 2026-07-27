@@ -22,10 +22,10 @@ use Illuminate\View\View;
 
 class KasirController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('role:admin|cashier');
-    }
+    // public function __construct()
+    // {
+    //     $this->middleware('role:admin|cashier');
+    // }
 
     public function index(Request $request): View
     {

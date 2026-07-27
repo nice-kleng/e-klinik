@@ -392,6 +392,52 @@ class MedicalRecordController extends Controller
         ])->stream('rekam-medis-' . $medicalRecord->id . '.pdf');
     }
 
+    public function updateServiceStatus(Request $request, Queue $queue): RedirectResponse
+    {
+        $validated = $request->validate([
+            'service_status' => 'required|in:pharmacy,completed,cancelled',
+        ]);
+
+        $registration = $queue->registration;
+        if (!$registration) {
+            return redirect()->back()->with('error', 'Registrasi tidak ditemukan');
+        }
+
+        $allowedTransitions = [
+            'in_consultation' => ['pharmacy', 'completed', 'cancelled'],
+            'pharmacy' => ['completed', 'cancelled'],
+            'cashier' => ['completed', 'cancelled'],
+            'education' => ['completed', 'cancelled'],
+            'completed' => [],
+            'cancelled' => [],
+        ];
+
+        $current = $registration->service_status;
+        $target = $validated['service_status'];
+
+        if (!in_array($target, $allowedTransitions[$current] ?? [])) {
+            return redirect()->back()->with('error', "Transisi dari '$current' ke '$target' tidak diizinkan");
+        }
+
+        try {
+            $registration->update(['service_status' => $target]);
+
+            $labels = [
+                'pharmacy' => 'Farmasi',
+                'completed' => 'Selesai',
+                'cancelled' => 'Dibatalkan',
+            ];
+
+            return redirect()->back()
+                ->with('success', "Status layanan diubah ke: {$labels[$target]}");
+        } catch (\Exception $e) {
+            Log::error('Gagal update service_status: ' . $e->getMessage());
+
+            return redirect()->back()
+                ->with('error', 'Gagal mengubah status layanan');
+        }
+    }
+
     public function destroy(MedicalRecord $medicalRecord): RedirectResponse
     {
         try {

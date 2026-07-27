@@ -89,6 +89,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('medical-records/workspace/{queue}/prescriptions', [MedicalRecordController::class, 'workspacePrescriptions'])
         ->name('workspace.prescriptions')
         ->middleware('role:admin|doctor');
+    Route::post('medical-records/{queue}/service-status', [MedicalRecordController::class, 'updateServiceStatus'])
+        ->name('medical-records.service-status')
+        ->middleware('role:admin|doctor');
     Route::post('medical-records/{medicalRecord}/sign', [MedicalRecordController::class, 'sign'])
         ->name('medical-records.sign')
         ->middleware('role:admin|doctor');
@@ -185,7 +188,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/{invoice}/pay', [KasirController::class, 'pay'])->name('pay');
         Route::delete('/{invoice}', [KasirController::class, 'destroy'])->name('destroy');
         Route::get('/{invoice}/print', [KasirController::class, 'print'])->name('print');
-    });
+    })->middleware('role:admin|cashier');
 
     // BPJS SEP — admin only
     Route::prefix('bpjs-seps')->name('bpjs-seps.')->middleware('role:admin')->group(function () {

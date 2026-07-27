@@ -324,6 +324,11 @@ class PrescriptionController extends Controller
                     'dispensed_at' => now(),
                     'notes' => $validated['notes'] ?? $prescription->notes,
                 ]);
+
+                $registration = $prescription->medicalRecord?->registration;
+                if ($registration && $registration->service_status === 'pharmacy') {
+                    $registration->update(['service_status' => 'cashier']);
+                }
             });
 
             return redirect()->route('prescriptions.show', $prescription)

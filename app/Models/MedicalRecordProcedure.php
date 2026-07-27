@@ -13,6 +13,7 @@ class MedicalRecordProcedure extends Model
         'medical_record_id',
         'icd9_cm_diagnosis_id',
         'notes',
+        'fee',
         'order',
         'operator_id',
         'performed_at',

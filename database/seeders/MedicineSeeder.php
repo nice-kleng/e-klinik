@@ -177,6 +177,56 @@ class MedicineSeeder extends Seeder
             }
         }
 
-        $this->command->info("Inventory seeded: " . count($stockData) . " items");
+        // Second batch (earlier expiry) for FIFO testing — top sellers
+        $batch2 = [
+            'PARA-500'   => ['qty' => 200, 'hpp' => 350, 'selling' => 1100],
+            'AMOX-500'   => ['qty' => 100, 'hpp' => 850, 'selling' => 1600],
+            'IBUPRO-400' => ['qty' => 100, 'hpp' => 550, 'selling' => 1600],
+            'PARA-SYR'   => ['qty' => 20,  'hpp' => 13000, 'selling' => 22000],
+        ];
+        $expiredDate2 = $now->copy()->addMonths(18);
+        $prodDate2 = $now->copy()->subMonths(1);
+
+        foreach ($batch2 as $code => $stock) {
+            $medicine = Medicine::where('code', $code)->first();
+            if (!$medicine) continue;
+
+            $batch = 'BTH-' . $now->format('Ymd') . '-' . str_pad(rand(1000, 1999), 4, '0', STR_PAD_LEFT);
+            $supplierId = $supplierIds[array_rand($supplierIds)];
+
+            $inv = Inventory::firstOrCreate(
+                [
+                    'medicine_id' => $medicine->id,
+                    'batch_number' => $batch,
+                ],
+                [
+                    'supplier_id' => $supplierId,
+                    'quantity' => $stock['qty'],
+                    'unit_price' => $stock['hpp'],
+                    'selling_price' => $stock['selling'],
+                    'production_date' => $prodDate2,
+                    'expired_date' => $expiredDate2,
+                    'notes' => 'Batch kedua',
+                    'created_by' => $adminId,
+                ]
+            );
+
+            if ($inv->wasRecentlyCreated) {
+                InventoryTransaction::create([
+                    'inventory_id' => $inv->id,
+                    'medicine_id' => $medicine->id,
+                    'type' => 'in',
+                    'quantity' => $stock['qty'],
+                    'reference_type' => 'initial_stock',
+                    'reference_id' => null,
+                    'unit_price' => $stock['hpp'],
+                    'total_price' => $stock['hpp'] * $stock['qty'],
+                    'notes' => 'Batch kedua ' . $medicine->name,
+                    'created_by' => $adminId,
+                ]);
+            }
+        }
+
+        $this->command->info("Inventory seeded: " . count($stockData) . " items + " . count($batch2) . " batch-2");
     }
 }

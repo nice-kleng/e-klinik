@@ -11,7 +11,7 @@ class LabRequestItem extends Model
 {
     use HasCreatedBy;
     protected $fillable = [
-        'lab_request_id', 'lab_test_id', 'status', 'created_by',
+        'lab_request_id', 'lab_test_id', 'fee', 'status', 'created_by',
     ];
 
     public function labRequest(): BelongsTo
