@@ -12,7 +12,9 @@ class SettingsController extends Controller
 {
     public function index(): View
     {
-        $settings = Configuration::where('group', 'pharmacy')->get()->keyBy('key');
+        $settings = Configuration::whereIn('group', ['pharmacy', 'billing'])
+            ->get()
+            ->keyBy('key');
 
         return view('settings.index', compact('settings'));
     }
@@ -23,6 +25,7 @@ class SettingsController extends Controller
             'auto_calc' => 'nullable|boolean',
             'tuslah' => 'required|integer|min:0|max:99999999',
             'embalase' => 'required|integer|min:0|max:99999999',
+            'biaya_konsultasi' => 'required|integer|min:0|max:99999999',
         ]);
 
         Configuration::updateOrCreate(
@@ -40,7 +43,12 @@ class SettingsController extends Controller
             ['value' => (string) $validated['embalase'], 'data_type' => 'integer']
         );
 
+        Configuration::updateOrCreate(
+            ['group' => 'billing', 'key' => 'biaya_konsultasi'],
+            ['value' => (string) $validated['biaya_konsultasi'], 'data_type' => 'integer']
+        );
+
         return redirect()->route('settings.index')
-            ->with('success', 'Pengaturan farmasi berhasil disimpan');
+            ->with('success', 'Pengaturan berhasil disimpan');
     }
 }

@@ -67,7 +67,6 @@
             'lab' => 'bg-warning',
             'pharmacy' => 'bg-warning',
             'cashier' => 'bg-danger',
-            'education' => 'bg-info',
             'resume' => 'bg-primary',
             'completed' => 'bg-success',
             'cancelled' => 'bg-danger',
@@ -82,7 +81,6 @@
             @case('lab') Laboratorium @break
             @case('pharmacy') Farmasi @break
             @case('cashier') Kasir @break
-            @case('education') Edukasi @break
             @case('resume') Resume @break
             @case('completed') Selesai @break
             @case('cancelled') Dibatalkan @break
@@ -125,9 +123,20 @@
                 @if($reg && $mr)
                     @php
                         $hasActivePrescriptions = $prescriptions->contains('status', 'active');
+                        $hasLabRequests = optional($queue->medicalRecord?->labRequests)->contains(fn ($lr) => $lr->status !== 'cancelled') ?? false;
                     @endphp
                     @if($reg->service_status === 'in_consultation')
-                        @if($hasActivePrescriptions)
+                        @if($hasLabRequests)
+                            <form method="POST" action="{{ route('medical-records.service-status', $queue) }}" class="d-inline"
+                                  onsubmit="return confirm('Kirim pasien ke Laboratorium?')">
+                                @csrf
+                                <input type="hidden" name="service_status" value="lab">
+                                <button type="submit" class="btn btn-info btn-sm">
+                                    <i class="fas fa-flask me-1"></i>Kirim ke Lab
+                                </button>
+                            </form>
+                        @endif
+                        @if($hasActivePrescriptions && !$hasLabRequests)
                             <form method="POST" action="{{ route('medical-records.service-status', $queue) }}" class="d-inline"
                                   onsubmit="return confirm('Kirim pasien ke Farmasi?')">
                                 @csrf
@@ -137,28 +146,24 @@
                                 </button>
                             </form>
                         @endif
-                        <form method="POST" action="{{ route('medical-records.service-status', $queue) }}" class="d-inline"
-                              onsubmit="return confirm('{{ $hasActivePrescriptions ? 'Masih ada resep aktif. Yakin selesai konsultasi?' : 'Tandai konsultasi selesai? Pasien akan masuk ke edukasi.' }}')">
-                            @csrf
-                            <input type="hidden" name="service_status" value="education">
-                            <button type="submit" class="btn btn-success btn-sm">
-                                <i class="fas fa-check-circle me-1"></i>{{ $hasActivePrescriptions ? 'Selesai Konsultasi (Tanpa Farmasi)' : 'Selesai Konsultasi' }}
-                            </button>
-                        </form>
+                        @if(!$hasActivePrescriptions && !$hasLabRequests)
+                            <form method="POST" action="{{ route('medical-records.service-status', $queue) }}" class="d-inline"
+                                  onsubmit="return confirm('Tandai konsultasi selesai? Pasien akan dialihkan ke Kasir.')">
+                                @csrf
+                                <input type="hidden" name="service_status" value="cashier">
+                                <button type="submit" class="btn btn-success btn-sm">
+                                    <i class="fas fa-check-circle me-1"></i>Selesai Konsultasi
+                                </button>
+                            </form>
+                        @endif
                     @endif
-                    @if($reg->service_status === 'education')
-                        <form method="POST" action="{{ route('medical-records.service-status', $queue) }}" class="d-inline"
-                              onsubmit="return confirm('Tandai kunjungan selesai?')">
-                            @csrf
-                            <input type="hidden" name="service_status" value="completed">
-                            <button type="submit" class="btn btn-success btn-sm">
-                                <i class="fas fa-check-circle me-1"></i>Selesai
-                            </button>
-                        </form>
-                    @endif
-                    @if(in_array($reg->service_status, ['pharmacy', 'cashier']))
+                    @if(in_array($reg->service_status, ['lab', 'pharmacy', 'cashier']))
                         <span class="badge bg-info fs-6 d-inline-flex align-items-center">
-                            <i class="fas fa-spinner fa-pulse me-1"></i>Menunggu {{ $reg->service_status === 'pharmacy' ? 'Farmasi' : 'Kasir' }}
+                            <i class="fas fa-spinner fa-pulse me-1"></i>Menunggu {{ match ($reg->service_status) {
+                                'lab' => 'Laboratorium',
+                                'pharmacy' => 'Farmasi',
+                                default => 'Kasir',
+                            } }}
                         </span>
                     @endif
                 @endif

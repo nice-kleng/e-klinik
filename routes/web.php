@@ -25,6 +25,8 @@ use App\Http\Controllers\Web\AuditTrailController;
 use App\Http\Controllers\Web\AttachmentController;
 use App\Http\Controllers\Web\InformedConsentController;
 use App\Http\Controllers\Web\KasirController;
+use App\Http\Controllers\Web\LabQueueController;
+use App\Http\Controllers\Web\PharmacyQueueController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -164,6 +166,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('prescriptions.last')
         ->middleware('role:admin|doctor|pharmacist');
 
+    // Pharmacy Queues — admin, pharmacist
+    Route::prefix('pharmacy-queues')->name('pharmacy-queues.')->middleware('role:admin|pharmacist')->group(function () {
+        Route::get('/', [PharmacyQueueController::class, 'index'])->name('index');
+        Route::post('/call-next', [PharmacyQueueController::class, 'callNext'])->name('call-next');
+        Route::post('/{pharmacyQueue}/complete', [PharmacyQueueController::class, 'complete'])->name('complete');
+        Route::post('/{pharmacyQueue}/cancel', [PharmacyQueueController::class, 'cancel'])->name('cancel');
+    });
+
     // Inventory — admin, pharmacist
     Route::prefix('inventories')->name('inventories.')->middleware('role:admin|pharmacist')->group(function () {
         Route::get('/', [InventoryController::class, 'index'])->name('index');
@@ -234,6 +244,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/', [LabResultController::class, 'store'])->name('store');
         Route::get('/{labResult}/edit', [LabResultController::class, 'edit'])->name('edit');
         Route::put('/{labResult}', [LabResultController::class, 'update'])->name('update');
+    });
+
+    // Lab Queues — admin, laborant
+    Route::prefix('lab-queues')->name('lab-queues.')->middleware('role:admin|laborant')->group(function () {
+        Route::get('/', [LabQueueController::class, 'index'])->name('index');
+        Route::post('/call-next', [LabQueueController::class, 'callNext'])->name('call-next');
+        Route::post('/{labQueue}/complete', [LabQueueController::class, 'complete'])->name('complete');
+        Route::post('/{labQueue}/cancel', [LabQueueController::class, 'cancel'])->name('cancel');
     });
 
     // ─── Triage (Asesmen Perawat) ──────────────────────────

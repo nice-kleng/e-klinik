@@ -156,6 +156,14 @@
             <span class="sidebar-text">Permintaan Lab</span>
         </a>
     </li>
+    <li class="nav-item {{ request()->routeIs('lab-queues.*') ? 'active' : '' }}">
+        <a href="{{ route('lab-queues.index') }}" class="nav-link">
+            <span class="sidebar-icon">
+                <i class="fas fa-list-ol fa-fw me-2"></i>
+            </span>
+            <span class="sidebar-text">Antrian Lab</span>
+        </a>
+    </li>
     <li class="nav-item {{ request()->routeIs('lab-results.*') ? 'active' : '' }}">
         <a href="{{ route('lab-results.index') }}" class="nav-link">
             <span class="sidebar-icon">
@@ -186,6 +194,14 @@
     <li role="separator" class="dropdown-divider mt-4 mb-3 border-gray-700"></li>
     <li class="nav-item">
         <span class="nav-link text-secondary text-uppercase small fw-bold px-3">Farmasi</span>
+    </li>
+    <li class="nav-item {{ request()->routeIs('pharmacy-queues.*') ? 'active' : '' }}">
+        <a href="{{ route('pharmacy-queues.index') }}" class="nav-link">
+            <span class="sidebar-icon">
+                <i class="fas fa-list-ol fa-fw me-2"></i>
+            </span>
+            <span class="sidebar-text">Antrian Farmasi</span>
+        </a>
     </li>
     <li class="nav-item {{ request()->routeIs('prescriptions.pending*') ? 'active' : '' }}">
         <a href="{{ route('prescriptions.pending') }}" class="nav-link">

@@ -3,7 +3,7 @@
 @section('content')
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0">Pengaturan Farmasi</h4>
+        <h4 class="mb-0">Pengaturan</h4>
     </div>
 
     @include('components.alert')
@@ -60,6 +60,27 @@
                                     @error('embalase') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
                                 <small class="text-muted">Biaya wadah/bungkus per resep racikan</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0">Biaya Pelayanan</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Biaya Konsultasi <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="number" name="biaya_konsultasi" class="form-control @error('biaya_konsultasi') is-invalid @enderror"
+                                        value="{{ old('biaya_konsultasi', $settings->get('biaya_konsultasi')?->value ?? config('billing.biaya_konsultasi')) }}"
+                                        min="0" max="99999999" required>
+                                    @error('biaya_konsultasi') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                </div>
+                                <small class="text-muted">Biaya jasa konsultasi dokter per kunjungan. Otomatis masuk ke invoice saat pasien sampai ke kasir.</small>
                             </div>
                         </div>
                     </div>

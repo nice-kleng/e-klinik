@@ -12,6 +12,7 @@ use App\Models\QueueMilestone;
 use App\Models\Registration;
 use App\Services\BpjsSepService;
 use App\Services\BPJS\AntrolService;
+use App\Services\RegistrationFlowService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -238,16 +239,23 @@ class QueueService
         }
 
         $serviceStatus = $queue->registration?->service_status;
-        if (in_array($serviceStatus, ['pharmacy', 'cashier'])) {
+        if (in_array($serviceStatus, ['lab', 'pharmacy', 'cashier'])) {
             throw new \RuntimeException(
-                'Pasien masih dalam alur ' . ($serviceStatus === 'pharmacy' ? 'Farmasi' : 'Kasir') .
+                'Pasien masih dalam alur ' . match ($serviceStatus) {
+                    'lab' => 'Laboratorium',
+                    'pharmacy' => 'Farmasi',
+                    default => 'Kasir',
+                } .
                 '. Selesaikan alur tersebut terlebih dahulu sebelum menyelesaikan antrean.'
             );
         }
 
         $queue->update(['status' => self::STATUS_COMPLETED]);
 
-        $queue->registration?->update(['service_status' => 'completed']);
+        $registration = $queue->registration;
+        if ($registration) {
+            RegistrationFlowService::route($registration, 'in_consultation');
+        }
 
         return $queue->fresh();
     }

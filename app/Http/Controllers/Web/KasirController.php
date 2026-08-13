@@ -80,14 +80,16 @@ class KasirController extends Controller
                 })
                 ->get();
 
+            $consultationFee = (int) config('billing.biaya_konsultasi', 50000);
+
             return view('kasir.create', compact(
                 'registration', 'patient', 'polyclinics',
-                'prescriptions', 'procedures', 'labRequests'
+                'prescriptions', 'procedures', 'labRequests', 'consultationFee'
             ));
         }
 
         $registrations = Registration::with(['patient', 'polyclinic'])
-            ->whereIn('service_status', ['in_consultation', 'pharmacy', 'cashier'])
+            ->whereIn('service_status', ['cashier'])
             ->whereDate('registration_date', now())
             ->orderBy('created_at', 'desc')
             ->get();
@@ -142,10 +144,6 @@ class KasirController extends Controller
 
             $invoice->update(['total_amount' => $total]);
 
-            if ($registration->service_status === 'in_consultation') {
-                $registration->update(['service_status' => 'cashier']);
-            }
-
             DB::commit();
 
             return redirect()->route('kasir.show', $invoice)
@@ -194,8 +192,8 @@ class KasirController extends Controller
         ]);
 
         $registration = $invoice->registration;
-        if ($registration && $registration->service_status === 'cashier') {
-            $registration->update(['service_status' => 'education']);
+        if ($registration && in_array($registration->service_status, ['cashier', 'pharmacy'])) {
+            $registration->update(['service_status' => 'completed']);
         }
 
         return redirect()->route('kasir.show', $invoice)

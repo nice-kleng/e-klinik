@@ -6,6 +6,7 @@ use App\Traits\HasCreatedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class LabRequest extends Model
 {
@@ -25,6 +26,18 @@ class LabRequest extends Model
     public function medicalRecord(): BelongsTo
     {
         return $this->belongsTo(MedicalRecord::class);
+    }
+
+    public function registration(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            Registration::class,
+            MedicalRecord::class,
+            'id',
+            'id',
+            'medical_record_id',
+            'registration_id'
+        );
     }
 
     public function patient(): BelongsTo

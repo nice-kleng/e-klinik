@@ -9,8 +9,15 @@ class ConfigServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
+        foreach (['pharmacy', 'billing'] as $group) {
+            $this->loadConfigGroup($group);
+        }
+    }
+
+    protected function loadConfigGroup(string $group): void
+    {
         try {
-            $configs = Configuration::where('group', 'pharmacy')->get();
+            $configs = Configuration::where('group', $group)->get();
 
             foreach ($configs as $c) {
                 $value = match ($c->data_type) {
@@ -20,11 +27,11 @@ class ConfigServiceProvider extends ServiceProvider
                     default => $c->value,
                 };
 
-                config(["pharmacy.{$c->key}" => $value]);
+                config(["{$group}.{$c->key}" => $value]);
             }
         } catch (\Throwable $e) {
             // DB not ready yet (migrating, fresh install, etc.)
-            // Fallback ke default di config/pharmacy.php
+            // Fallback ke default di config/{$group}.php
         }
     }
 }

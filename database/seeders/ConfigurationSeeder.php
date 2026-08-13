@@ -13,6 +13,7 @@ class ConfigurationSeeder extends Seeder
             ['group' => 'pharmacy', 'key' => 'auto_calc', 'value' => 'true', 'data_type' => 'boolean'],
             ['group' => 'pharmacy', 'key' => 'tuslah', 'value' => '3000', 'data_type' => 'integer'],
             ['group' => 'pharmacy', 'key' => 'embalase', 'value' => '1000', 'data_type' => 'integer'],
+            ['group' => 'billing', 'key' => 'biaya_konsultasi', 'value' => '50000', 'data_type' => 'integer'],
         ];
 
         foreach ($configs as $config) {

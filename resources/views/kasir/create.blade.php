@@ -74,6 +74,35 @@
                         <span class="badge bg-primary fs-6" id="total-display">Rp 0</span>
                     </div>
                     <div class="card-body p-0">
+                        <div class="px-3 pt-3">
+                            <h6 class="text-muted"><i class="fas fa-stethoscope me-1"></i>Pelayanan</h6>
+                        </div>
+                        <table class="table table-sm mb-0">
+                            <thead><tr><th><input type="checkbox" class="consultation-all" checked></th><th>Item</th><th>Jumlah</th><th>Harga</th><th>Subtotal</th></tr></thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" class="item-check consultation" checked
+                                            data-type="consultation"
+                                            data-id="{{ $registration->id }}"
+                                            data-desc="Biaya Konsultasi"
+                                            data-qty="1"
+                                            data-price="{{ $consultationFee }}">
+                                    </td>
+                                    <td>Biaya Konsultasi</td>
+                                    <td>1</td>
+                                    <td class="text-end">
+                                        <div class="input-group input-group-sm justify-content-end">
+                                            <span class="input-group-text">Rp</span>
+                                            <input type="number" class="form-control form-control-sm text-end consultation-price"
+                                                value="{{ $consultationFee }}" min="0" style="max-width:130px">
+                                        </div>
+                                    </td>
+                                    <td class="text-end consultation-subtotal">Rp {{ number_format($consultationFee, 0, ',', '.') }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
                         @if($prescriptions->count() > 0)
                         <div class="px-3 pt-3">
                             <h6 class="text-muted"><i class="fas fa-prescription me-1"></i>Resep</h6>
@@ -158,12 +187,6 @@
                             </tbody>
                         </table>
                         @endif
-
-                        @if($prescriptions->isEmpty() && $procedures->isEmpty() && $labRequests->isEmpty())
-                        <div class="text-center text-muted py-4">
-                            Tidak ada item tagihan untuk pasien ini
-                        </div>
-                        @endif
                     </div>
                     <div class="card-footer bg-white d-flex justify-content-between align-items-center">
                         <span>Total: <strong id="total-footer">Rp 0</strong></span>
@@ -199,6 +222,24 @@ document.addEventListener('DOMContentLoaded', function() {
         if (totalFooter) totalFooter.textContent = formatted;
     }
 
+    var consultCheck = document.querySelector('.item-check.consultation');
+    var consultPriceInput = document.querySelector('.consultation-price');
+    var consultSubtotal = document.querySelector('.consultation-subtotal');
+
+    function syncConsultationPrice() {
+        if (!consultCheck || !consultPriceInput) return;
+        var price = parseFloat(consultPriceInput.value) || 0;
+        consultCheck.dataset.price = price;
+        if (consultSubtotal) {
+            consultSubtotal.textContent = 'Rp ' + price.toLocaleString('id-ID');
+        }
+        updateTotal();
+    }
+
+    if (consultPriceInput) {
+        consultPriceInput.addEventListener('input', syncConsultationPrice);
+    }
+
     document.querySelectorAll('.check-group').forEach(function(groupCb) {
         groupCb.addEventListener('change', function() {
             var group = this.dataset.group;
@@ -208,6 +249,14 @@ document.addEventListener('DOMContentLoaded', function() {
             updateTotal();
         });
     });
+
+    var consultAll = document.querySelector('.consultation-all');
+    if (consultAll) {
+        consultAll.addEventListener('change', function() {
+            if (consultCheck) consultCheck.checked = consultAll.checked;
+            updateTotal();
+        });
+    }
 
     document.querySelectorAll('.item-check').forEach(function(cb) {
         cb.addEventListener('change', updateTotal);
@@ -221,9 +270,13 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         checked.forEach(function(cb, i) {
+            var itemableType = cb.dataset.type === 'prescription_item' ? 'App\\Models\\PrescriptionItem'
+                : cb.dataset.type === 'procedure' ? 'App\\Models\\MedicalRecordProcedure'
+                : cb.dataset.type === 'lab_item' ? 'App\\Models\\LabRequestItem'
+                : 'App\\Models\\Registration';
             var hiddenHtml = '';
             hiddenHtml += '<input type="hidden" name="items[' + i + '][item_type]" value="' + cb.dataset.type + '">';
-            hiddenHtml += '<input type="hidden" name="items[' + i + '][itemable_type]" value="' + (cb.dataset.type === 'prescription_item' ? 'App\\\\Models\\\\PrescriptionItem' : cb.dataset.type === 'procedure' ? 'App\\\\Models\\\\MedicalRecordProcedure' : 'App\\\\Models\\\\LabRequestItem') + '">';
+            hiddenHtml += '<input type="hidden" name="items[' + i + '][itemable_type]" value="' + itemableType + '">';
             hiddenHtml += '<input type="hidden" name="items[' + i + '][itemable_id]" value="' + cb.dataset.id + '">';
             hiddenHtml += '<input type="hidden" name="items[' + i + '][description]" value="' + cb.dataset.desc + '">';
             hiddenHtml += '<input type="hidden" name="items[' + i + '][quantity]" value="' + cb.dataset.qty + '">';
@@ -232,7 +285,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    updateTotal();
+    syncConsultationPrice();
 });
 </script>
 @endpush

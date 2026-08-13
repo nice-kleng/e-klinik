@@ -13,7 +13,9 @@ use App\Models\Polyclinic;
 use App\Models\Prescription;
 use App\Models\Queue;
 use App\Models\Registration;
+use App\Services\LabQueueService;
 use App\Services\MedicalRecordService;
+use App\Services\PharmacyQueueService;
 use App\Services\TteService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -395,7 +397,7 @@ class MedicalRecordController extends Controller
     public function updateServiceStatus(Request $request, Queue $queue): RedirectResponse
     {
         $validated = $request->validate([
-            'service_status' => 'required|in:pharmacy,lab,education,completed,cancelled',
+            'service_status' => 'required|in:lab,pharmacy,cashier,completed,cancelled',
         ]);
 
         $registration = $queue->registration;
@@ -404,11 +406,10 @@ class MedicalRecordController extends Controller
         }
 
         $allowedTransitions = [
-            'in_consultation' => ['pharmacy', 'lab', 'education', 'completed', 'cancelled'],
-            'lab' => ['pharmacy', 'education', 'completed', 'cancelled'],
-            'pharmacy' => ['cashier', 'education', 'completed', 'cancelled'],
-            'cashier' => ['education', 'completed', 'cancelled'],
-            'education' => ['completed', 'cancelled'],
+            'in_consultation' => ['lab', 'pharmacy', 'cashier', 'completed', 'cancelled'],
+            'lab' => ['pharmacy', 'cashier', 'completed', 'cancelled'],
+            'pharmacy' => ['cashier', 'completed', 'cancelled'],
+            'cashier' => ['completed', 'cancelled'],
             'completed' => [],
             'cancelled' => [],
         ];
@@ -421,23 +422,55 @@ class MedicalRecordController extends Controller
         }
 
         try {
+            if ($target === 'lab') {
+                $labQueue = app(LabQueueService::class)->createQueue($registration);
+                if (!$labQueue) {
+                    return redirect()->back()->with('error', 'Tidak ada permintaan laboratorium untuk pasien ini');
+                }
+
+                $this->completeDoctorQueue($queue);
+
+                return redirect()->route('queues.index')
+                    ->with('success', 'Pasien dikirim ke Antrian Laboratorium (No. ' . $labQueue->queue_number . ')');
+            }
+
+            if ($target === 'pharmacy') {
+                $pharmacyQueue = app(PharmacyQueueService::class)->createQueue($registration);
+                if (!$pharmacyQueue) {
+                    return redirect()->back()->with('error', 'Tidak ada resep aktif untuk pasien ini');
+                }
+
+                $this->completeDoctorQueue($queue);
+
+                return redirect()->route('queues.index')
+                    ->with('success', 'Pasien dikirim ke Antrian Farmasi (No. ' . $pharmacyQueue->queue_number . ')');
+            }
+
             $registration->update(['service_status' => $target]);
+            $this->completeDoctorQueue($queue);
 
             $labels = [
-                'pharmacy' => 'Farmasi',
                 'lab' => 'Laboratorium',
-                'education' => 'Edukasi',
+                'pharmacy' => 'Farmasi',
+                'cashier' => 'Kasir',
                 'completed' => 'Selesai',
                 'cancelled' => 'Dibatalkan',
             ];
 
-            return redirect()->back()
+            return redirect()->route('queues.index')
                 ->with('success', "Status layanan diubah ke: {$labels[$target]}");
         } catch (\Exception $e) {
             Log::error('Gagal update service_status: ' . $e->getMessage());
 
             return redirect()->back()
                 ->with('error', 'Gagal mengubah status layanan');
+        }
+    }
+
+    protected function completeDoctorQueue(Queue $queue): void
+    {
+        if (in_array($queue->status, ['waiting', 'called', 'in_progress'])) {
+            $queue->update(['status' => 'completed']);
         }
     }
 

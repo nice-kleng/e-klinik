@@ -327,7 +327,22 @@ class PrescriptionController extends Controller
 
                 $registration = $prescription->medicalRecord?->registration;
                 if ($registration && $registration->service_status === 'pharmacy') {
-                    $registration->update(['service_status' => 'cashier']);
+                    $remainingActive = \App\Models\Prescription::where('status', 'active')
+                        ->whereHas('medicalRecord', fn ($q) => $q->where('registration_id', $registration->id))
+                        ->exists();
+
+                    if (!$remainingActive) {
+                        $pharmacyQueue = \App\Models\PharmacyQueue::where('registration_id', $registration->id)
+                            ->where('status', '!=', 'completed')
+                            ->latest()
+                            ->first();
+
+                        if ($pharmacyQueue && in_array($pharmacyQueue->status, ['waiting', 'called', 'in_progress'])) {
+                            $pharmacyQueue->update(['status' => 'completed', 'completed_at' => now()]);
+                        }
+
+                        $registration->update(['service_status' => 'cashier']);
+                    }
                 }
             });
 
